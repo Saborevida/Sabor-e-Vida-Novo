@@ -1,0 +1,56 @@
+INSERT INTO public.planos_de_refeicao (id_usuario, nome_plano, data_inicio, lista_refeicoes, lista_compras_gerada)
+SELECT
+    (jsonb_array_elements(data)->>'id_usuario')::uuid AS id_usuario,
+    jsonb_array_elements(data)->>'nome_plano' AS nome_plano,
+    (jsonb_array_elements(data)->>'data_inicio')::date AS data_inicio,
+    (jsonb_array_elements(data)->'lista_refeicoes')::jsonb AS lista_refeicoes,
+    jsonb_array_elements(data)->>'lista_compras_gerada' AS lista_compras_gerada
+FROM (
+    SELECT '
+[
+  {
+    "id_usuario": "a7e43999-d145-4e15-881b-5442b1a18e37",
+    "nome_plano": "Plano Semanal Diabetes Controlado",
+    "data_inicio": "2025-06-17",
+    "lista_refeicoes": {
+      "segunda": {
+        "cafe": "4248babb-c9c2-4565-96b6-12b3595d35ec",
+        "almoco": "9eb99cc4-59b5-4df1-b760-e596d21381de",
+        "jantar": "4e144ef5-05ae-4458-a1a0-f82621ba10da"
+      },
+      "terca": {
+        "cafe": "81c8b99f-6277-448e-802a-2244f89ea2f7",
+        "almoco": "947afc49-d999-4a21-ac60-714a543651e6",
+        "jantar": "2b48f296-d871-4ec0-8bec-82d1af1304d1"
+      },
+      "quarta": {
+        "cafe": "4248babb-c9c2-4565-96b6-12b3595d35ec",
+        "almoco": "3ab53442-6f8c-4128-882f-9e14836025e9",
+        "jantar": "4e144ef5-05ae-4458-a1a0-f82621ba10da"
+      },
+      "quinta": {
+        "cafe": "a6d5de0f-f6d3-4d5c-92fc-67cf3a52167b",
+        "almoco": "9eb99cc4-59b5-4df1-b760-e596d21381de",
+        "jantar": "2b48f296-d871-4ec0-8bec-82d1af1304d1"
+      },
+      "sexta": {
+        "cafe": "81c8b99f-6277-448e-802a-2244f89ea2f7",
+        "almoco": "947afc49-d999-4a21-ac60-714a543651e6",
+        "jantar": "9eb99cc4-59b5-4df1-b760-e596d21381de"
+      },
+      "sabado": {
+        "cafe": "45a2cc2a-1e9b-43d3-92fb-cf43a1ae6b4d",
+        "almoco": "2b48f296-d871-4ec0-8bec-82d1af1304d1",
+        "jantar": "4e144ef5-05ae-4458-a1a0-f82621ba10da"
+      },
+      "domingo": {
+        "cafe": "a6d5de0f-f6d3-4d5c-92fc-67cf3a52167b",
+        "almoco": "9eb99cc4-59b5-4df1-b760-e596d21381de",
+        "jantar": "81c8b99f-6277-448e-802a-2244f89ea2f7"
+      }
+    },
+    "lista_compras_gerada": "Aveia, ovos, leite desnatado, frutas vermelhas, espinafre, tomate, queijo feta, salmão, abóbora, frango, berinjela, quinoa, tofu, cogumelos, iogurte, atum, etc. (Esta lista é um exemplo, a lista real deve ser gerada com base nos UUIDs das receitas selecionadas.)"
+  }
+]
+'::jsonb AS data
+) AS s;

@@ -1,0 +1,61 @@
+INSERT INTO public.glossario (termo, definicao, categoria, tags)
+SELECT
+    jsonb_array_elements(data)->>'termo' AS termo,
+    jsonb_array_elements(data)->>'definicao' AS definicao,
+    jsonb_array_elements(data)->>'categoria' AS categoria,
+    -- Correção: Converte o array JSONB de tags para TEXT[] usando ARRAY() e jsonb_array_elements_text
+    ARRAY(SELECT jsonb_array_elements_text(jsonb_array_elements(data)->'tags')) AS tags
+FROM (
+    SELECT '
+[
+  {
+    "termo": "Índice Glicêmico (IG)",
+    "definicao": "Mede a velocidade com que um alimento contendo carboidratos eleva a glicose no sangue, em comparação com um alimento de referência. Alimentos com baixo IG causam elevações mais lentas e suaves na glicemia.",
+    "categoria": "Informação sobre Diabetes",
+    "tags": ["glicemia", "carboidratos", "nutrição"]
+  },
+  {
+    "termo": "Carga Glicêmica (CG)",
+    "definicao": "Leva em conta o índice glicêmico e a quantidade de carboidratos consumidos em uma porção. Alimentos com baixa CG têm menor impacto na glicemia.",
+    "categoria": "Informação sobre Diabetes",
+    "tags": ["glicemia", "carboidratos", "nutrição"]
+  },
+  {
+    "termo": "Xilitol",
+    "definicao": "Adoçante natural encontrado em frutas e vegetais, com sabor semelhante ao açúcar, 40% menos calorias e baixo índice glicêmico.",
+    "categoria": "Ingrediente",
+    "tags": ["adoçante", "substituto do açúcar", "poliol"]
+  },
+  {
+    "termo": "Frutose",
+    "definicao": "Açúcar natural encontrado nas frutas. Apesar de ter baixo IG, deve ser consumido com moderação por diabéticos.",
+    "categoria": "Ingrediente",
+    "tags": ["açúcar natural", "frutas", "diabetes"]
+  },
+  {
+    "termo": "Adoçantes Artificiais",
+    "definicao": "Substitutos do açúcar que não elevam a glicemia. Exemplos: sucralose, aspartame, sacarina.",
+    "categoria": "Ingrediente",
+    "tags": ["adoçante", "zero açúcar", "substituto do açúcar"]
+  },
+  {
+    "termo": "Gorduras Boas",
+    "definicao": "Fontes saudáveis de gordura, como azeite de oliva, abacate, nozes e sementes, importantes para o controle glicêmico.",
+    "categoria": "Nutriente",
+    "tags": ["gordura saudável", "nutrição", "diabetes"]
+  },
+  {
+    "termo": "Fibras",
+    "definicao": "Auxiliam na redução do pico glicêmico, promovem saciedade e melhoram o controle metabólico.",
+    "categoria": "Nutriente",
+    "tags": ["fibra", "saciedade", "controle glicêmico"]
+  },
+  {
+    "termo": "Porção Controlada",
+    "definicao": "Quantidade recomendada de alimento para manter o equilíbrio de nutrientes e o controle da glicemia.",
+    "categoria": "Dicas Nutricionais",
+    "tags": ["quantidade", "controle glicêmico", "alimentação saudável"]
+  }
+]
+'::jsonb AS data
+) AS s;

@@ -1,0 +1,224 @@
+-- -- Receita 1: Panquecas de aveia com frutas vermelhas
+INSERT INTO public.receitas (nome, descricao, id_categoria, ingredientes, modo_preparo, informacoes_nutricionais, tempo_preparo, dificuldade, tags, url_imagem)
+VALUES (
+    'Panquecas de aveia com frutas vermelhas',
+    'Receita saudável para café da manhã',
+    'f09170ed-ce27-48f1-9268-2cc6ece297c0', -- ID da categoria 'Café da Manhã e Lanches'
+    '[{"item": "Farinha de aveia", "quantidade": "a gosto"},{"item": "Ovos", "quantidade": "a gosto"},{"item": "Leite desnatado", "quantidade": "a gosto"},{"item": "Frutas vermelhas", "quantidade": "a gosto"},{"item": "Adoçante", "quantidade": "a gosto"}]'::jsonb,
+    '["1. Em uma tigela, misture a farinha de aveia, os ovos, o leite desnatado e o adoçante até obter uma massa homogênea. Prepare na frigideira antiaderente em fogo médio-baixo, dourando dos dois lados. Sirva com as frutas vermelhas."]'::jsonb,
+    '{"calorias": 150, "carboidratos": 20, "proteinas": 8, "gorduras": 3, "indice_glicemico": "moderado", "fibras": 3, "porcao": "1 porção"}'::jsonb,
+    20,
+    'Fácil',
+    '{"café da manhã", "leve", "frutas"}',
+    'https://placehold.co/600x400/0AFF0F/272525?text=Panquecas+de+Aveia'
+);
+
+-- Receita 2: Omelete mediterrâneo com ervas frescas
+INSERT INTO public.receitas (nome, descricao, id_categoria, ingredientes, modo_preparo, informacoes_nutricionais, tempo_preparo, dificuldade, tags, url_imagem)
+VALUES (
+    'Omelete mediterrâneo com ervas frescas',
+    'Omelete proteica rica em sabor',
+    'f09170ed-ce27-48f1-9268-2cc6ece297c0', -- ID da categoria 'Café da Manhã e Lanches'
+    '[{"item": "Ovos", "quantidade": "a gosto"},{"item": "Espinafre", "quantidade": "a gosto"},{"item": "Tomate", "quantidade": "a gosto"},{"item": "Queijo feta", "quantidade": "a gosto"},{"item": "Azeite de oliva", "quantidade": "a gosto"},{"item": "Ervas frescas", "quantidade": "a gosto"}]'::jsonb,
+    '["1. Bata os ovos. Adicione o espinafre, tomate, queijo feta, azeite de oliva e ervas frescas. Cozinhe em fogo baixo em uma frigideira até firmar."]'::jsonb,
+    '{"calorias": 180, "carboidratos": 5, "proteinas": 15, "gorduras": 10, "indice_glicemico": "baixo", "fibras": 2, "porcao": "1 omelete"}'::jsonb,
+    15,
+    'Fácil',
+    '{"café da manhã", "lanche", "proteico", "vegetais"}',
+    'https://placehold.co/600x400/0AFF0F/272525?text=Omelete+Mediterranea'
+);
+
+-- Receita 3: Mousse de abacate e cacau
+INSERT INTO public.receitas (nome, descricao, id_categoria, ingredientes, modo_preparo, informacoes_nutricionais, tempo_preparo, dificuldade, tags, url_imagem)
+VALUES (
+    'Mousse de abacate e cacau',
+    'Sobremesa doce com baixo índice glicêmico',
+    '456f17a0-3eb7-40c7-90e9-6413fd5dc531', -- ID da categoria 'Sobremesas Leves' (confirmado na imagem)
+    '[{"item": "Abacate", "quantidade": "a gosto"},{"item": "Cacau puro", "quantidade": "a gosto"},{"item": "Adoçante", "quantidade": "a gosto"},{"item": "Leite de coco", "quantidade": "a gosto"},{"item": "Essência de baunilha", "quantidade": "a gosto"}]'::jsonb,
+    '["1. Bata todos os ingredientes no liquidificador até obter um creme liso e homogêneo. Leve à geladeira para firmar antes de servir."]'::jsonb,
+    '{"calorias": 220, "carboidratos": 10, "proteinas": 3, "gorduras": 18, "indice_glicemico": "baixo", "fibras": 5, "porcao": "1 porção"}'::jsonb,
+    10,
+    'Fácil',
+    '{"sobremesa", "vegano", "baixo-carboidrato"}',
+    'https://placehold.co/600x400/0AFF0F/272525?text=Mousse+de+Abacate'
+);
+
+-- Receita 4: Chá verde com gengibre e limão
+INSERT INTO public.receitas (nome, descricao, id_categoria, ingredientes, modo_preparo, informacoes_nutricionais, tempo_preparo, dificuldade, tags, url_imagem)
+VALUES (
+    'Chá verde com gengibre e limão',
+    'Bebida antioxidante e termogênica',
+    '2cc3e968-8cf7-41f2-a174-e9147a1fee33', -- ID da categoria 'Chás e Infusões Benéficas' (confirmado na imagem)
+    '[{"item": "Chá verde", "quantidade": "a gosto"},{"item": "Gengibre fresco", "quantidade": "a gosto"},{"item": "Limão", "quantidade": "a gosto"},{"item": "Água quente", "quantidade": "a gosto"}]'::jsonb,
+    '["1. Ferva a água. Adicione o chá verde, gengibre e limão. Deixe infusionar por alguns minutos e sirva."]'::jsonb,
+    '{"calorias": 5, "carboidratos": 1, "proteinas": 0, "gorduras": 0, "indice_glicemico": "muito baixo", "fibras": 0, "porcao": "1 xícara"}'::jsonb,
+    10,
+    'Muito Fácil',
+    '{"bebida", "saudável", "refrescante"}',
+    'https://placehold.co/600x400/0AFF0F/272525?text=Cha+Verde'
+);
+
+-- Receita 5: Frango grelhado com legumes ao vapor
+INSERT INTO public.receitas (nome, descricao, id_categoria, ingredientes, modo_preparo, informacoes_nutricionais, tempo_preparo, dificuldade, tags, url_imagem)
+VALUES (
+    'Frango grelhado com legumes ao vapor',
+    'Prato principal leve e nutritivo',
+    '527912a8-87b6-4765-94b1-e99e181f77e6', -- ID da categoria 'Pratos Principais' (confirmado na imagem)
+    '[{"item": "Peito de frango", "quantidade": "a gosto"},{"item": "Brócolis", "quantidade": "a gosto"},{"item": "Cenoura", "quantidade": "a gosto"},{"item": "Abobrinha", "quantidade": "a gosto"},{"item": "Azeite de oliva", "quantidade": "a gosto"},{"item": "Ervas finas", "quantidade": "a gosto"}]'::jsonb,
+    '["1. Tempere o peito de frango e grelhe até dourar. Cozinhe os legumes no vapor até ficarem macios. Sirva o frango com os legumes."]'::jsonb,
+    '{"calorias": 300, "carboidratos": 12, "proteinas": 35, "gorduras": 10, "indice_glicemico": "baixo", "fibras": 4, "porcao": "1 porção"}'::jsonb,
+    25,
+    'Fácil',
+    '{"almoço", "jantar", "proteico", "leve"}',
+    'https://placehold.co/600x400/0AFF0F/272525?text=Frango+Legumes'
+);
+
+-- Receita 6: Salmão assado com crosta de ervas
+INSERT INTO public.receitas (nome, descricao, id_categoria, ingredientes, modo_preparo, informacoes_nutricionais, tempo_preparo, dificuldade, tags, url_imagem)
+VALUES (
+    'Salmão assado com crosta de ervas',
+    'Opção rica em ômega-3 e proteínas',
+    '527912a8-87b6-4765-94b1-e99e181f77e6', -- ID da categoria 'Pratos Principais'
+    '[{"item": "Filé de salmão", "quantidade": "a gosto"},{"item": "Ervas frescas", "quantidade": "a gosto"},{"item": "Alho", "quantidade": "a gosto"},{"item": "Limão", "quantidade": "a gosto"},{"item": "Azeite de oliva", "quantidade": "a gosto"}]'::jsonb,
+    '["1. Tempere o salmão com sal, pimenta, alho picado e raspas de limão. Cubra com as ervas frescas picadas e regue com azeite. Asse em forno pré-aquecido por 20 minutos ou até o ponto desejado."]'::jsonb,
+    '{"calorias": 350, "carboidratos": 2, "proteinas": 30, "gorduras": 22, "indice_glicemico": "muito baixo", "fibras": 1, "porcao": "1 filé"}'::jsonb,
+    30,
+    'Fácil',
+    '{"almoço", "jantar", "ômega-3", "peixe"}',
+    'https://placehold.co/600x400/0AFF0F/272525?text=Salmao+Assado'
+);
+
+-- Receita 7: Berinjela recheada com quinoa e legumes
+INSERT INTO public.receitas (nome, descricao, id_categoria, ingredientes, modo_preparo, informacoes_nutricionais, tempo_preparo, dificuldade, tags, url_imagem)
+VALUES (
+    'Berinjela recheada com quinoa e legumes',
+    'Receita vegetariana com baixo índice glicêmico',
+    '527912a8-87b6-4765-94b1-e99e181f77e6', -- ID da categoria 'Pratos Principais'
+    '[{"item": "Berinjela", "quantidade": "a gosto"},{"item": "Quinoa", "quantidade": "a gosto"},{"item": "Tomate", "quantidade": "a gosto"},{"item": "Cebola", "quantidade": "a gosto"},{"item": "Alho", "quantidade": "a gosto"},{"item": "Azeite", "quantidade": "a gosto"},{"item": "Queijo ralado", "quantidade": "a gosto"}]'::jsonb,
+    '["1. Corte a berinjela ao meio, retire parte da polpa e asse as metades. Refogue a quinoa cozida com tomate, cebola, alho e a polpa da berinjela. Recheie as berinjelas assadas com esse refogado, polvilhe queijo ralado e leve ao forno para gratinar."]'::jsonb,
+    '{"calorias": 220, "carboidratos": 18, "proteinas": 9, "gorduras": 10, "indice_glicemico": "baixo", "fibras": 6, "porcao": "1 porção"}'::jsonb,
+    45,
+    'Médio',
+    '{"almoço", "jantar", "vegetariano", "sem carne"}',
+    'https://placehold.co/600x400/0AFF0F/272525?text=Berinjela+Quinoa'
+);
+
+-- Receita 8: Creme de abóbora com gengibre
+INSERT INTO public.receitas (nome, descricao, id_categoria, ingredientes, modo_preparo, informacoes_nutricionais, tempo_preparo, dificuldade, tags, url_imagem)
+VALUES (
+    'Creme de abóbora com gengibre',
+    'Sopa leve ideal para o jantar',
+    'ae540911-41f4-4a52-9fd9-e560952c636a', -- ID da categoria 'Sopas e Entradas'
+    '[{"item": "Abóbora", "quantidade": "a gosto"},{"item": "Gengibre", "quantidade": "a gosto"},{"item": "Cebola", "quantidade": "a gosto"},{"item": "Alho", "quantidade": "a gosto"},{"item": "Azeite", "quantidade": "a gosto"},{"item": "Caldo de legumes", "quantidade": "a gosto"}]'::jsonb,
+    '["1. Refogue a cebola e o alho no azeite. Adicione a abóbora picada, o gengibre e o caldo de legumes. Cozinhe até a abóbora ficar macia e bata tudo no liquidificador até obter um creme homogêneo. Tempere a gosto."]'::jsonb,
+    '{"calorias": 120, "carboidratos": 15, "proteinas": 2, "gorduras": 4, "indice_glicemico": "baixo", "fibras": 4, "porcao": "1 tigela"}'::jsonb,
+    30,
+    'Fácil',
+    '{"sopa", "jantar", "leve", "vegana"}',
+    'https://placehold.co/600x400/0AFF0F/272525?text=Creme+Abobora'
+);
+
+-- Receita 9: Salada verde com nozes e molho de iogurte
+INSERT INTO public.receitas (nome, descricao, id_categoria, ingredientes, modo_preparo, informacoes_nutricionais, tempo_preparo, dificuldade, tags, url_imagem)
+VALUES (
+    'Salada verde com nozes e molho de iogurte',
+    'Acompanhamento refrescante e saudável',
+    'b4fac6d0-7bda-4347-9371-bb321409d5fc', -- ID da categoria 'Acompanhamentos'
+    '[{"item": "Alface", "quantidade": "a gosto"},{"item": "Rúcula", "quantidade": "a gosto"},{"item": "Nozes", "quantidade": "a gosto"},{"item": "Iogurte natural", "quantidade": "a gosto"},{"item": "Limão", "quantidade": "a gosto"},{"item": "Mostarda", "quantidade": "a gosto"},{"item": "Mel", "quantidade": "a gosto"}]'::jsonb,
+    '["1. Lave bem as folhas de alface e rúcula. Pique as nozes. Para o molho, misture o iogurte natural, suco de limão, mostarda e um toque de mel. Misture as folhas e as nozes, e regue com o molho."]'::jsonb,
+    '{"calorias": 150, "carboidratos": 8, "proteinas": 5, "gorduras": 10, "indice_glicemico": "muito baixo", "fibras": 3, "porcao": "1 porção"}'::jsonb,
+    10,
+    'Muito Fácil',
+    '{"salada", "acompanhamento", "vegetariano", "leve"}',
+    'https://placehold.co/600x400/0AFF0F/272525?text=Salada+Verde'
+);
+
+-- Receita 10: Torta integral de frango com legumes
+INSERT INTO public.receitas (nome, descricao, id_categoria, ingredientes, modo_preparo, informacoes_nutricionais, tempo_preparo, dificuldade, tags, url_imagem)
+VALUES (
+    'Torta integral de frango com legumes',
+    'Prato único para almoço ou jantar',
+    '7e1d15d4-36f8-464a-b48e-2b2f145d1ffe', -- ID da categoria 'Bolos e Tortas' ou categoria que você associou
+    '[{"item": "Farinha integral", "quantidade": "a gosto"},{"item": "Ovos", "quantidade": "a gosto"},{"item": "Leite desnatado", "quantidade": "a gosto"},{"item": "Frango desfiado", "quantidade": "a gosto"},{"item": "Cenoura", "quantidade": "a gosto"},{"item": "Ervilhas", "quantidade": "a gosto"}]'::jsonb,
+    '["1. Prepare a massa da torta com farinha integral, ovos e leite desnatado. Misture o frango desfiado com cenoura picada e ervilhas. Monte a torta em uma forma, cubra com a massa e asse em forno pré-aquecido até dourar e cozinhar por completo."]'::jsonb,
+    '{"calorias": 280, "carboidratos": 22, "proteinas": 18, "gorduras": 10, "indice_glicemico": "moderado", "fibras": 5, "porcao": "1 fatia"}'::jsonb,
+    40,
+    'Médio',
+    '{"almoço", "jantar", "integral", "frango"}',
+    'https://placehold.co/600x400/0AFF0F/272525?text=Torta+Frango'
+);
+
+-- Receita 11: Pudim de chia com manga
+INSERT INTO public.receitas (nome, descricao, id_categoria, ingredientes, modo_preparo, informacoes_nutricionais, tempo_preparo, dificuldade, tags, url_imagem)
+VALUES (
+    'Pudim de chia com manga',
+    'Sobremesa funcional rica em fibras',
+    '456f17a0-3eb7-40c7-90e9-6413fd5dc531', -- ID da categoria 'Sobremesas Leves'
+    '[{"item": "Sementes de chia", "quantidade": "a gosto"},{"item": "Leite vegetal", "quantidade": "a gosto"},{"item": "Manga picada", "quantidade": "a gosto"},{"item": "Mel", "quantidade": "a gosto"}]'::jsonb,
+    '["1. Misture as sementes de chia com o leite vegetal em um recipiente. Leve à geladeira por pelo menos 4 horas (ou durante a noite) para as sementes hidratarem e o pudim firmar. Sirva com pedaços de manga e um fio de mel."]'::jsonb,
+    '{"calorias": 180, "carboidratos": 20, "proteinas": 6, "gorduras": 7, "indice_glicemico": "baixo", "fibras": 8, "porcao": "1 porção"}'::jsonb,
+    5,
+    'Muito Fácil',
+    '{"sobremesa", "funcional", "fibras", "frutas"}',
+    'https://placehold.co/600x400/0AFF0F/272525?text=Pudim+Chia+Manga'
+);
+
+-- Receita 12: Smoothie detox de couve e abacaxi
+INSERT INTO public.receitas (nome, descricao, id_categoria, ingredientes, modo_preparo, informacoes_nutricionais, tempo_preparo, dificuldade, tags, url_imagem)
+VALUES (
+    'Smoothie detox de couve e abacaxi',
+    'Bebida refrescante e desintoxicante',
+    '2cc3e968-8cf7-41f2-a174-e9147a1fee33', -- ID da categoria 'Chás e Infusões Benéficas' ou 'Bebidas Especiais'
+    '[{"item": "Couve", "quantidade": "a gosto"},{"item": "Abacaxi", "quantidade": "a gosto"},{"item": "Água de coco", "quantidade": "a gosto"},{"item": "Gengibre", "quantidade": "a gosto"},{"item": "Limão", "quantidade": "a gosto"}]'::jsonb,
+    '["1. Bata todos os ingredientes no liquidificador até obter uma mistura homogênea. Sirva imediatamente, preferencialmente gelado."]'::jsonb,
+    '{"calorias": 90, "carboidratos": 16, "proteinas": 2, "gorduras": 1, "indice_glicemico": "moderado", "fibras": 3, "porcao": "1 copo"}'::jsonb,
+    5,
+    'Muito Fácil',
+    '{"bebida", "detox", "frutas", "verde"}',
+    'https://placehold.co/600x400/0AFF0F/272525?text=Smoothie+Detox'
+);
+
+-- Receita 13: Brownie funcional de cacau e batata-doce
+INSERT INTO public.receitas (nome, descricao, id_categoria, ingredientes, modo_preparo, informacoes_nutricionais, tempo_preparo, dificuldade, tags, url_imagem)
+VALUES (
+    'Brownie funcional de cacau e batata-doce',
+    'Sobremesa com baixo índice glicêmico',
+    '46ff5602-4d51-4c2a-983b-7bb716ab1f93', -- ID da categoria 'Doces para Ocasiões Especiais' ou 'Bolos e Tortas'
+    '[{"item": "Batata-doce cozida", "quantidade": "a gosto"},{"item": "Cacau puro", "quantidade": "a gosto"},{"item": "Ovos", "quantidade": "a gosto"},{"item": "Mel", "quantidade": "a gosto"},{"item": "Farinha de amêndoas", "quantidade": "a gosto"}]'::jsonb,
+    '["1. Amasse a batata-doce cozida. Misture com o cacau puro, ovos, mel e farinha de amêndoas até incorporar bem. Despeje em uma forma untada e asse em forno pré-aquecido por 30 minutos ou até firmar."]'::jsonb,
+    '{"calorias": 210, "carboidratos": 18, "proteinas": 6, "gorduras": 12, "indice_glicemico": "baixo", "fibras": 4, "porcao": "1 fatia"}'::jsonb,
+    45,
+    'Médio',
+    '{"sobremesa", "funcional", "chocolate", "sem glúten"}',
+    'https://placehold.co/600x400/0AFF0F/272525?text=Brownie+Batata+Doce'
+);
+
+-- Receita 14: Biscoitos integrais de aveia e banana
+INSERT INTO public.receitas (nome, descricao, id_categoria, ingredientes, modo_preparo, informacoes_nutricionais, tempo_preparo, dificuldade, tags, url_imagem)
+VALUES (
+    'Biscoitos integrais de aveia e banana',
+    'Petisco saudável e funcional',
+    'ca376bf5-f645-43b0-b622-9babe366a95b', -- ID da categoria 'Biscoitos e Petiscos Doces'
+    '[{"item": "Aveia em flocos", "quantidade": "a gosto"},{"item": "Banana amassada", "quantidade": "a gosto"},{"item": "Mel", "quantidade": "a gosto"},{"item": "Canela", "quantidade": "a gosto"},{"item": "Gotas de chocolate amargo", "quantidade": "a gosto"}]'::jsonb,
+    '["1. Em uma tigela, misture a aveia, banana amassada, mel e canela. Adicione as gotas de chocolate amargo. Modele os biscoitos e asse em forno pré-aquecido até ficarem firmes e levemente dourados."]'::jsonb,
+    '{"calorias": 80, "carboidratos": 12, "proteinas": 2, "gorduras": 3, "indice_glicemico": "baixo", "fibras": 2, "porcao": "2 biscoitos"}'::jsonb,
+    25,
+    'Fácil',
+    '{"petisco", "doce", "integral", "saudável"}',
+    'https://placehold.co/600x400/0AFF0F/272525?text=Biscoitos+Aveia+Banana'
+);
+
+-- Receita 15: Água saborizada com limão e hortelã
+INSERT INTO public.receitas (nome, descricao, id_categoria, ingredientes, modo_preparo, informacoes_nutricionais, tempo_preparo, dificuldade, tags, url_imagem)
+VALUES (
+    'Água saborizada com limão e hortelã',
+    'Hidratação saborosa e natural',
+    '5ea93d03-0574-4525-8db0-4956e8f3620c', -- ID da categoria 'Águas Saborizadas'
+    '[{"item": "Água", "quantidade": "a gosto"},{"item": "Rodelas de limão", "quantidade": "a gosto"},{"item": "Folhas de hortelã", "quantidade": "a gosto"},{"item": "Gelo", "quantidade": "a gosto"}]'::jsonb,
+    '["1. Em uma jarra, combine a água, as rodelas de limão e as folhas de hortelã. Adicione gelo a gosto. Deixe na geladeira por pelo menos 30 minutos para que os sabores se infundam. Sirva gelado."]'::jsonb,
+    '{"calorias": 0, "carboidratos": 0, "proteinas": 0, "gorduras": 0, "indice_glicemico": "muito baixo", "fibras": 0, "porcao": "1 copo"}'::jsonb,
+    5,
+    'Muito Fácil',
+    '{"bebida", "refrescante", "natural", "hidratação"}',
+    'https://placehold.co/600x400/0AFF0F/272525?text=Agua+Saborizada'
+);
