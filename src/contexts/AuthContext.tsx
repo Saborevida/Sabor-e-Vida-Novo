@@ -28,31 +28,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Get initial session
-    const getSession = async () => {
+    const init = async () => {
       const { user } = await getCurrentUser();
       setUser(user);
-      
+
       if (user) {
         await fetchUserProfile(user.id);
       }
-      
+
       setLoading(false);
     };
 
-    getSession();
+    init();
 
-    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        setUser(session?.user || null);
-        
-        if (session?.user) {
-          await fetchUserProfile(session.user.id);
+        console.log('📡 Auth state changed:', event);
+        const user = session?.user || null;
+        setUser(user);
+
+        if (user) {
+          await fetchUserProfile(user.id);
         } else {
           setUserProfile(null);
         }
-        
+
         setLoading(false);
       }
     );
@@ -62,16 +62,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const fetchUserProfile = async (userId: string) => {
     try {
+      console.log('🔍 Buscando perfil para ID:', userId);
       const { data, error } = await supabase
-        .from('users')
+        .from('usuarios') // Corrigido: acessa tabela correta
         .select('*')
         .eq('id', userId)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Erro ao buscar perfil:', error);
+        return;
+      }
+
+      console.log('✅ Perfil encontrado:', data);
       setUserProfile(data);
-    } catch (error) {
-      console.error('Error fetching user profile:', error);
+    } catch (err) {
+      console.error('❌ Erro inesperado ao buscar perfil:', err);
     }
   };
 
@@ -90,9 +96,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     if (data.user && !error) {
-      // Create user profile
+      console.log('👤 Usuário criado:', data.user.id);
       const { error: profileError } = await supabase
-        .from('users')
+        .from('usuarios') // Corrigido: salva na tabela 'usuarios'
         .insert({
           id: data.user.id,
           email: data.user.email,
@@ -100,7 +106,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
 
       if (profileError) {
-        console.error('Error creating user profile:', profileError);
+        console.error('❌ Erro ao criar perfil do usuário:', profileError);
       }
     }
 
