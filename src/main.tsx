@@ -1,25 +1,11 @@
-console.log("Aplicação carregada no navegador");
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { AuthProvider } from './contexts/AuthContext';
-import Login from './pages/login';
-import Dashboard from './pages/Dashboard';
+import ReactDOM from 'react-dom/client';
+import App from './App';
+import './index.css'; // ou o arquivo CSS principal que estiver usando
 
-import Register from './pages/Register'; // <-- nova importação
-
-const App: React.FC = () => {
-  return (
-    <AuthProvider>
-      <Router>
-        <Routes>
-          <Route path="/" element={<Login />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/register" element={<Register />} /> {/* <-- nova rota */}
-        </Routes>
-      </Router>
-    </AuthProvider>
-  );
-};
-
-export default App;
+const root = ReactDOM.createRoot(document.getElementById('root')!);
+root.render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);

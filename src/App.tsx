@@ -1,9 +1,8 @@
-dimport React from 'react';
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Login from './pages/login';
 import Register from './pages/Register';
-import ForgotPassword from './pages/ForgotPassword';
 import Dashboard from './pages/Dashboard';
 
 const PrivateRoute = ({ children }: { children: JSX.Element }) => {
@@ -21,7 +20,6 @@ const App: React.FC = () => {
           {/* Rotas públicas */}
           <Route path="/" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
 
           {/* Rotas privadas */}
           <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
