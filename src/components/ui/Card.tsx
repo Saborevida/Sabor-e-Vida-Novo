@@ -8,7 +8,8 @@ interface CardProps {
   padding?: 'none' | 'sm' | 'md' | 'lg';
 }
 
-const Card: React.FC<CardProps> = ({
+// Componente Card principal (exportado como named export)
+export const Card: React.FC<CardProps> = ({ // Alterado de `export default Card` para `export const Card`
   children,
   className = '',
   hover = false,
@@ -36,4 +37,16 @@ const Card: React.FC<CardProps> = ({
   );
 };
 
-export default Card;
+interface CardContentProps {
+  children: React.ReactNode;
+  className?: string;
+}
+
+// Componente CardContent (exportado como named export)
+export const CardContent: React.FC<CardContentProps> = ({ children, className = '' }) => {
+  return (
+    <div className={`text-neutral-700 ${className}`}>
+      {children}
+    </div>
+  );
+};

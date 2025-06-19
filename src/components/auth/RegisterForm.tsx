@@ -1,79 +1,154 @@
 import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Mail, Lock, Eye, EyeOff, User } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import Input from '../ui/Input';
 import Button from '../ui/Button';
-import Card from '../ui/Card';
+import Input from '../ui/Input';
+import { Card } from '../ui/Card'; // CORREÇÃO: Importa Card como uma exportação nomeada
 
 const RegisterForm: React.FC = () => {
-  const { signUp } = useAuth();
-
-  const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
-  const [senha, setSenha] = useState('');
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [password, setPassword] = useState('');
+  const [name, setName] = useState(''); // Added name state
+  const [confirmPassword, setConfirmPassword] = useState(''); // Added confirmPassword state
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false); // Added showConfirmPassword state
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState(''); // Added success state
+
+  const { signUp } = useAuth(); // Using signUp from AuthContext
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
     setError('');
     setSuccess('');
-    setLoading(true);
+
+    if (password !== confirmPassword) {
+      setError('As senhas não coincidem');
+      setLoading(false);
+      return;
+    }
 
     try {
-      await signUp({ email, password: senha, nome });
-      setSuccess('Cadastro realizado com sucesso! Verifique seu e-mail.');
+      const { error } = await signUp(email, password, name); // Passing name to signUp
+      if (error) {
+        setError(error.message); // Display error message from Supabase
+      } else {
+        setSuccess('Cadastro realizado com sucesso! Verifique seu email para confirmar sua conta.');
+        // Optionally redirect after a delay
+        setTimeout(() => {
+          navigate('/login');
+        }, 3000);
+      }
     } catch (err: any) {
-      setError(err.message || 'Erro ao cadastrar. Tente novamente.');
+      setError(err.message || 'Erro ao registrar. Tente novamente.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Card className="w-full max-w-md mx-auto p-6">
-      <h2 className="text-2xl font-bold text-center mb-4">Criar Conta</h2>
+    <Card className="w-full max-w-md mx-auto">
+      <div className="text-center mb-8">
+        <h1 className="text-2xl font-heading font-bold text-dark-800 mb-2">
+          Cadastre-se
+        </h1>
+        <p className="text-neutral-600">
+          Crie sua conta para acessar receitas e planos personalizados
+        </p>
+      </div>
 
-      {error && (
-        <div className="bg-red-100 text-red-700 px-4 py-2 rounded mb-4">
-          {error}
-        </div>
-      )}
-      {success && (
-        <div className="bg-green-100 text-green-700 px-4 py-2 rounded mb-4">
-          {success}
-        </div>
-      )}
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+            {error}
+          </div>
+        )}
+        {success && (
+          <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg">
+            {success}
+          </div>
+        )}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
         <Input
-          label="Nome"
+          label="Nome Completo"
           type="text"
-          value={nome}
-          onChange={(e) => setNome(e.target.value)}
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          icon={User}
           placeholder="Seu nome"
           required
         />
+
         <Input
           label="Email"
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          icon={Mail}
           placeholder="seu@email.com"
           required
         />
-        <Input
-          label="Senha"
-          type="password"
-          value={senha}
-          onChange={(e) => setSenha(e.target.value)}
-          placeholder="Crie uma senha"
-          required
-        />
-        <Button type="submit" fullWidth loading={loading}>
-          Criar Conta
+
+        <div className="relative">
+          <Input
+            label="Senha"
+            type={showPassword ? 'text' : 'password'}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            icon={Lock}
+            placeholder="••••••••"
+            required
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute right-3 top-9 text-neutral-400 hover:text-neutral-600"
+          >
+            {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+          </button>
+        </div>
+
+        <div className="relative">
+          <Input
+            label="Confirmar Senha"
+            type={showConfirmPassword ? 'text' : 'password'}
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            icon={Lock}
+            placeholder="••••••••"
+            required
+          />
+          <button
+            type="button"
+            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+            className="absolute right-3 top-9 text-neutral-400 hover:text-neutral-600"
+          >
+            {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+          </button>
+        </div>
+
+        <Button
+          type="submit"
+          fullWidth
+          loading={loading}
+          disabled={!email || !password || !name || !confirmPassword}
+        >
+          Cadastrar
         </Button>
       </form>
+
+      <div className="mt-6 text-center">
+        <p className="text-neutral-600">
+          Já tem uma conta?{' '}
+          <Link to="/login" className="text-primary-600 hover:text-primary-700 font-medium">
+            Entrar
+          </Link>
+        </p>
+      </div>
     </Card>
   );
 };

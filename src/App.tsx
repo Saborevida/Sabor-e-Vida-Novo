@@ -1,36 +1,48 @@
-import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { useAuth } from './contexts/AuthContext';
 
-import Login from './pages/login';
+import Home from './pages/Home';
+import Login from './pages/login'; // atenção à minúscula
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
-// import ForgotPassword from './pages/ForgotPassword'; // Ativaremos depois
+import NotFound from './pages/NotFound'; // certifique-se de criar este arquivo
 
-const PrivateRoute = ({ children }: { children: JSX.Element }) => {
+function PrivateRoute({ children }: { children: JSX.Element }) {
   const { user, loading } = useAuth();
 
-  if (loading) return <p>Carregando...</p>;
-  return user ? children : <Navigate to="/" />;
-};
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-neutral-50">
+        <div className="text-center">
+          <div className="w-10 h-10 border-4 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-neutral-600">Verificando autenticação...</p>
+        </div>
+      </div>
+    );
+  }
 
-const App: React.FC = () => {
+  return user ? children : <Navigate to="/login" />;
+}
+
+function App() {
   return (
-    <AuthProvider>
-      <Router>
-        <Routes>
-          <Route path="/" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          {/* <Route path="/forgot-password" element={<ForgotPassword />} /> */}
-          <Route path="/dashboard" element={
+    <Router>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route
+          path="/dashboard"
+          element={
             <PrivateRoute>
               <Dashboard />
             </PrivateRoute>
-          } />
-        </Routes>
-      </Router>
-    </AuthProvider>
+          }
+        />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </Router>
   );
-};
+}
 
 export default App;
