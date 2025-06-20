@@ -5,7 +5,7 @@ import { Recipe } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
 import { addToFavorites, removeFromFavorites } from '../../lib/supabase';
 import Card from '../ui/Card';
-import Button from '../ui/Button';
+import Button from '../ui/button';
 
 interface RecipeCardProps {
   recipe: Recipe;

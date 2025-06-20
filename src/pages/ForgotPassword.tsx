@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import Input from '../components/ui/Input';
+import Input from '../components/ui/input';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 
