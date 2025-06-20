@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 
 import Header from '../components/layout/Header';
-import button from '../components/ui/Button';
+import { Button } from '@/components/ui/button'; // Usa named import e caminho em minúsculas
 
 const Home: React.FC = () => {
   const features = [
