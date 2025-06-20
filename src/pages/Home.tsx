@@ -14,7 +14,7 @@ import {
   Check
 } from 'lucide-react';
 import { Button } from '@/components/ui/button'; // Adicione as chaves { } e use o alias @/
-import Card from '../components/ui/card';
+import { Card } from '../components/ui/card';
 
 const Home: React.FC = () => {
   const features = [

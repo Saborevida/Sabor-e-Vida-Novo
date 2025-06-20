@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, User } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import Button from '@/components/ui/button';
-import Input from '@/components/ui/input';
-import { Card } from '@/components/ui/card'; // CORREÇÃO: Importa Card como uma exportação nomeada
+import { Button } from '@/components/ui/button'; // CORREÇÃO: Importa Button como uma exportação nomeada
+import { Input } from '@/components/ui/input';   // CORREÇÃO: Importa Input como uma exportação nomeada
+import { Card } from '@/components/ui/card';     // Importa Card como uma exportação nomeada (já corrigido anteriormente)
 
 const RegisterForm: React.FC = () => {
   const [email, setEmail] = useState('');

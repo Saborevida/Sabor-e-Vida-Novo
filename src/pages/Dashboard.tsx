@@ -10,14 +10,14 @@ import {
   Users,
   ChefHat
 } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
-import { getRecipes, getFavorites } from '../lib/supabase';
-import { Recipe } from '../types';
-import { Card } from '@/components/ui/card';   // Adicione as chaves { } e use o alias @/
-import { Button } from '@/components/ui/button'; // Adicione as chaves { } e use o alias @/
+import { useAuth } from '@/contexts/AuthContext'; // CORREÇÃO: Usa alias @/
+import { getRecipes, getFavorites } from '@/lib/supabase'; // CORREÇÃO: Usa alias @/
+import { Recipe } from '@/types'; // CORREÇÃO: Usa alias @/
+import { Card } from '@/components/ui/card';   // CORREÇÃO: Usa named import e alias @/
+import { Button } from '@/components/ui/button'; // CORREÇÃO: Usa named import e alias @/
 
 const Dashboard: React.FC = () => {
-  const { userProfile } = useAuth();
+  const { userProfile, user } = useAuth(); // CORREÇÃO: userProfile pode vir de user ou ser um estado separado, adicionado 'user' para usar user.id
   const [recentRecipes, setRecentRecipes] = useState<Recipe[]>([]);
   const [favoriteRecipes, setFavoriteRecipes] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(true);
@@ -26,34 +26,44 @@ const Dashboard: React.FC = () => {
     console.log('📊 Carregando dados do dashboard');
     
     const fetchDashboardData = async () => {
-      if (!userProfile) {
-        console.log('👤 Aguardando perfil do usuário...');
+      // CORREÇÃO: userProfile pode não estar imediatamente disponível, usar 'user' do AuthContext
+      if (!user) { // Verifica se há um usuário logado
+        console.log('👤 Aguardando perfil do usuário ou login...');
+        setLoading(false); // Parar o loading se não houver usuário logado
         return;
       }
 
       try {
-        console.log('🔄 Buscando dados do dashboard para:', userProfile.email);
+        console.log('🔄 Buscando dados do dashboard para:', user.email);
         
         // Fetch recent recipes
+        // getRecipes() deve buscar da tabela 'recipes'
         const { data: recipes, error: recipesError } = await getRecipes();
         if (recipes && !recipesError) {
           console.log('✅ Receitas carregadas:', recipes.length);
-          setRecentRecipes(recipes.slice(0, 4));
+          // CORREÇÃO: As propriedades de receita devem ser snake_case no RecipeCard se vierem do DB
+          setRecentRecipes(recipes.slice(0, 4)); 
         } else {
-          console.log('⚠️ Usando receitas mock');
+          console.log('⚠️ Usando receitas mock (se getRecipes não retornar dados)');
+          // A Bolt.New disse que adicionou mock data fallbacks, então se não tiver receitas no DB, deve usar mock.
+          setRecentRecipes([]); // Ou use um mock de fallback aqui se getRecipes não tiver fallback interno
         }
 
         // Fetch favorite recipes
-        const { data: favorites, error: favoritesError } = await getFavorites(userProfile.id);
+        // getFavorites() deve buscar da tabela 'favorites' com join para 'recipes'
+        const { data: favorites, error: favoritesError } = await getFavorites(user.id); // CORREÇÃO: Usar user.id
         if (favorites && !favoritesError) {
           console.log('✅ Favoritos carregados:', favorites.length);
-          setFavoriteRecipes(favorites.map(f => f.recipes).filter(Boolean).slice(0, 4));
+          // Mapeia para pegar o objeto de receita do join, se a estrutura for { id, user_id, recipe_id, recipes: {...recipe_object} }
+          const fetchedFavoriteRecipes = favorites.map((fav: any) => fav.recipes).filter(Boolean).slice(0, 4); // 'any' temporário, idealmente tipar 'fav'
+          setFavoriteRecipes(fetchedFavoriteRecipes);
         } else {
-          console.log('ℹ️ Nenhum favorito encontrado');
+          console.log('ℹ️ Nenhum favorito encontrado ou erro ao carregar favoritos:', favoritesError?.message);
           setFavoriteRecipes([]);
         }
-      } catch (error) {
-        console.error('❌ Erro ao carregar dados do dashboard:', error);
+      } catch (error: any) {
+        console.error('❌ Erro ao carregar dados do dashboard:', error.message);
+        // Implementar fallback para dados mock se a Bolt.New prometeu
       } finally {
         setLoading(false);
         console.log('✅ Carregamento do dashboard concluído');
@@ -61,8 +71,9 @@ const Dashboard: React.FC = () => {
     };
 
     fetchDashboardData();
-  }, [userProfile]);
+  }, [user]); // Re-executa quando 'user' muda, garantindo que o perfil é buscado após o login
 
+  // Stats hardcoded, idealmente seriam dinâmicos com dados do usuário/BD
   const stats = [
     {
       title: 'Receitas Favoritas',
@@ -73,21 +84,21 @@ const Dashboard: React.FC = () => {
     },
     {
       title: 'Planos Criados',
-      value: 3,
+      value: 3, // Este valor é hardcoded, deve vir do DB 'meal_plans' do user
       icon: Calendar,
       color: 'text-blue-500',
       bgColor: 'bg-blue-100',
     },
     {
       title: 'Artigos Lidos',
-      value: 12,
+      value: 12, // Este valor é hardcoded, deve vir do DB ou lógica de usuário
       icon: BookOpen,
       color: 'text-green-500',
       bgColor: 'bg-green-100',
     },
     {
       title: 'Pontuação Saúde',
-      value: 85,
+      value: 85, // Este valor é hardcoded, deve vir do perfil do usuário ou cálculo
       icon: Star,
       color: 'text-yellow-500',
       bgColor: 'bg-yellow-100',
@@ -129,6 +140,21 @@ const Dashboard: React.FC = () => {
     );
   }
 
+  // Se o userProfile não estiver disponível após o loading, pode ser um problema de autenticação/RLS
+  // Adicionei um fallback para o caso de userProfile ainda não ter sido carregado.
+  if (!userProfile && !loading && user) {
+    return (
+      <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
+        <div className="text-center bg-white p-6 rounded-lg shadow-sm">
+          <h1 className="text-xl font-heading font-bold text-dark-800 mb-4">Erro ao carregar perfil</h1>
+          <p className="text-red-600 mb-4">Seu perfil não pôde ser carregado. Tente novamente ou entre em contato com o suporte.</p>
+          <Button onClick={() => window.location.reload()}>Recarregar Página</Button>
+        </div>
+      </div>
+    );
+  }
+
+
   return (
     <div className="min-h-screen bg-neutral-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -139,18 +165,18 @@ const Dashboard: React.FC = () => {
           className="mb-8"
         >
           <h1 className="text-3xl font-heading font-bold text-dark-800 mb-2">
-            Olá, {userProfile?.name || 'Usuário'}! 👋
+            Olá, {userProfile?.name || user?.email || 'Usuário'}! 👋 {/* CORREÇÃO: userProfile.name */}
           </h1>
           <p className="text-neutral-600">
             Bem-vindo de volta ao seu painel de controle nutricional
           </p>
           
           {/* Debug info em desenvolvimento */}
-          {import.meta.env.DEV && (
+          {import.meta.env.DEV && ( // Mostra apenas em ambiente de desenvolvimento local
             <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm">
               <p><strong>Debug:</strong> Dashboard carregado com sucesso</p>
-              <p><strong>Usuário:</strong> {userProfile?.email}</p>
-              <p><strong>Receitas:</strong> {recentRecipes.length}</p>
+              <p><strong>Usuário:</strong> {userProfile?.email || user?.email}</p>
+              <p><strong>Receitas Recentes:</strong> {recentRecipes.length}</p>
               <p><strong>Favoritos:</strong> {favoriteRecipes.length}</p>
             </div>
           )}
@@ -227,7 +253,7 @@ const Dashboard: React.FC = () => {
                   <Card key={recipe.id} hover padding="sm">
                     <div className="flex items-center space-x-4">
                       <img
-                        src={recipe.imageUrl || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=100'}
+                        src={recipe.image_url || 'https://placehold.co/100x100/EAEAEA/272525?text=Receita'} // CORREÇÃO: image_url
                         alt={recipe.name}
                         className="w-16 h-16 rounded-lg object-cover"
                       />
@@ -236,15 +262,15 @@ const Dashboard: React.FC = () => {
                         <div className="flex items-center space-x-4 text-sm text-neutral-600">
                           <div className="flex items-center space-x-1">
                             <Clock size={14} />
-                            <span>{recipe.prepTime} min</span>
+                            <span>{recipe.prep_time} min</span> {/* CORREÇÃO: prep_time */}
                           </div>
                           <div className="flex items-center space-x-1">
                             <Users size={14} />
-                            <span>{recipe.nutritionInfo.servings}</span>
+                            <span>{recipe.nutrition_info.servings}</span> {/* CORREÇÃO: nutrition_info.servings */}
                           </div>
                           <div className="flex items-center space-x-1">
                             <TrendingUp size={14} />
-                            <span>IG: {recipe.nutritionInfo.glycemicIndex}</span>
+                            <span>IG: {recipe.nutrition_info.glycemic_index}</span> {/* CORREÇÃO: nutrition_info.glycemic_index */}
                           </div>
                         </div>
                       </div>
@@ -282,7 +308,7 @@ const Dashboard: React.FC = () => {
                   <Card key={recipe.id} hover padding="sm">
                     <div className="flex items-center space-x-4">
                       <img
-                        src={recipe.imageUrl || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=100'}
+                        src={recipe.image_url || 'https://placehold.co/100x100/EAEAEA/272525?text=Receita'} // CORREÇÃO: image_url
                         alt={recipe.name}
                         className="w-16 h-16 rounded-lg object-cover"
                       />
@@ -291,7 +317,7 @@ const Dashboard: React.FC = () => {
                         <div className="flex items-center space-x-4 text-sm text-neutral-600">
                           <div className="flex items-center space-x-1">
                             <Clock size={14} />
-                            <span>{recipe.prepTime} min</span>
+                            <span>{recipe.prep_time} min</span> {/* CORREÇÃO: prep_time */}
                           </div>
                           <div className="flex items-center space-x-1">
                             <Heart size={14} className="text-red-500" />
