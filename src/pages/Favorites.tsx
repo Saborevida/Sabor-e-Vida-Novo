@@ -4,7 +4,7 @@ import { Heart, Search, Filter, Clock, Users, Star } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext'; // Mantido como importação relativa se 'contexts' não tiver alias @/
 import { getFavorites } from '../lib/supabase'; // Mantido como importação relativa se 'lib' não tiver alias @/
 import { Recipe } from '../types'; // Mantido como importação relativa se 'types' não tiver alias @/
-import RecipeCard from '../components/recipes/RecipeCard'; // Mantido como importação relativa se não usar alias para 'recipes'
+import RecipeCard from '../components/recipes/recipecard'; // Mantido como importação relativa se não usar alias para 'recipes'
 import { Card } from '@/components/ui/card';     // CORREÇÃO: Usa named import e alias @/ para caminho em minúsculas
 import { Button } from '@/components/ui/button'; // CORREÇÃO: Usa named import e alias @/ para caminho em minúsculas
 import { Input } from '@/components/ui/input';   // CORREÇÃO: Usa named import e alias @/ para caminho em minúsculas

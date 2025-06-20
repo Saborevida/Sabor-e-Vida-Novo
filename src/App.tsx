@@ -3,14 +3,14 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Header from './components/layout/Header';
 import Footer from './components/layout/Footer';
-import Home from './pages/Home';
-import Dashboard from './pages/Dashboard';
-import LoginForm from './components/auth/LoginForm';
-import RecipesPage from './pages/Recipes';
-import MealPlansPage from './pages/MealPlans';
-import EducationPage from './pages/Education';
-import FavoritesPage from './pages/Favorites';
-import ProfilePage from './pages/Profile';
+import Home from './pages/home';
+import Dashboard from './pages/dashboard';
+import LoginForm from './components/auth/loginForm';
+import RecipesPage from './pages/recipes';
+import MealPlansPage from './pages/mealplans';
+import EducationPage from './pages/education';
+import FavoritesPage from './pages/favorites';
+import ProfilePage from './pages/profile';
 
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {

@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Search, Filter, Clock, Users, Star, ChefHat } from 'lucide-react';
 import { getRecipes } from '@/lib/supabase'; // CORREÇÃO: Usa alias @/
 import { Recipe } from '@/types'; // CORREÇÃO: Usa alias @/
-import RecipeCard from '@/components/recipes/recipeCard'; // CORREÇÃO: Usa alias @/ e nome minúsculo
+import RecipeCard from '@/components/recipes/recipecard'; // CORREÇÃO: Usa alias @/ e nome minúsculo
 import { Card } from '@/components/ui/card';     // CORREÇÃO: Usa named import e alias @/
 import { Button } from '@/components/ui/button'; // CORREÇÃO: Usa named import e alias @/
 import { Input } from '@/components/ui/input';   // CORREÇÃO: Usa named import e alias @/
