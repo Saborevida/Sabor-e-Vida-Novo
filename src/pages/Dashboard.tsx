@@ -13,8 +13,8 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { getRecipes, getFavorites } from '../lib/supabase';
 import { Recipe } from '../types';
-import Card from '../components/ui/card';
-import Button from '../components/ui/button';
+import { Card } from '@/components/ui/card';   // Adicione as chaves { } e use o alias @/
+import { Button } from '@/components/ui/button'; // Adicione as chaves { } e use o alias @/
 
 const Dashboard: React.FC = () => {
   const { userProfile } = useAuth();
