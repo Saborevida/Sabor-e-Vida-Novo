@@ -13,7 +13,7 @@ import {
   ArrowRight,
   Check
 } from 'lucide-react';
-import Button from '../components/ui/button';
+import { Button } from '@/components/ui/button'; // Adicione as chaves { } e use o alias @/
 import Card from '../components/ui/card';
 
 const Home: React.FC = () => {
