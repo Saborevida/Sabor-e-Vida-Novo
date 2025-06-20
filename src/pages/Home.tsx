@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 
 import Header from '../components/layout/Header';
-import Button from '../components/ui/Button';
+import button from '../components/ui/Button';
 
 const Home: React.FC = () => {
   const features = [
