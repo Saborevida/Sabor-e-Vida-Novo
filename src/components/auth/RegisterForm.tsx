@@ -4,7 +4,7 @@ import { Mail, Lock, Eye, EyeOff, User } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import Button from '../ui/button';
 import Input from '../ui/input';
-import { Card } from '../ui/Card'; // CORREÇÃO: Importa Card como uma exportação nomeada
+import { Card } from '../ui/card'; // CORREÇÃO: Importa Card como uma exportação nomeada
 
 const RegisterForm: React.FC = () => {
   const [email, setEmail] = useState('');
