@@ -13,8 +13,8 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { getRecipes, getFavorites } from '../lib/supabase';
 import { Recipe } from '../types';
-import Card from '../components/ui/Card';
-import Button from '../components/ui/Button';
+import Card from '../components/ui/card';
+import Button from '../components/ui/button';
 
 const Dashboard: React.FC = () => {
   const { userProfile } = useAuth();

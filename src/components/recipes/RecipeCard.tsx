@@ -4,8 +4,8 @@ import { Clock, Users, Heart, Star } from 'lucide-react';
 import { Recipe } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
 import { addToFavorites, removeFromFavorites } from '../../lib/supabase';
-import Card from '../ui/Card';
-import Button from '../ui/Button';
+import Card from '../ui/card';
+import Button from '../ui/button';
 
 interface RecipeCardProps {
   recipe: Recipe;

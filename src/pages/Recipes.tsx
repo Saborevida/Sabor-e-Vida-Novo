@@ -4,9 +4,9 @@ import { Search, Filter, Clock, Users, Star, ChefHat } from 'lucide-react';
 import { getRecipes } from '../lib/supabase';
 import { Recipe } from '../types';
 import RecipeCard from '../components/recipes/RecipeCard';
-import Card from '../components/ui/Card';
-import Button from '../components/ui/Button';
-import Input from '../components/ui/Input';
+import Card from '../components/ui/card';
+import Button from '../components/ui/button';
+import Input from '../components/ui/input';
 
 const RecipesPage: React.FC = () => {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
