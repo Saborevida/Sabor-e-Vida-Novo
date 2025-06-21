@@ -13,8 +13,8 @@ import {
   ArrowRight,
   Check
 } from 'lucide-react';
-import Button from '../components/ui/Button';
-import Card from '../components/ui/Card';
+import Button from '@/components/ui/Button';
+import Card from '@/components/ui/Card';
 
 const Home: React.FC = () => {
   const features = [
