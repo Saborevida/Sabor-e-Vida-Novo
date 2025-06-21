@@ -1,8 +1,8 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext'; // Manter relativa ou mudar para '@/contexts/AuthContext'
-import Header from './components/layout/Header'; // Manter relativa ou mudar para '@/components/layout/header'
-import Footer from './components/layout/Footer'; // Manter relativa ou mudar para '@/components/layout/footer'
+import Header from './components/layout/header'; // Manter relativa ou mudar para '@/components/layout/header'
+import Footer from './components/layout/footer'; // Manter relativa ou mudar para '@/components/layout/footer'
 
 // Importações das Páginas (Usando Alias @/ e nome em minúsculas)
 import Home from '@/pages/home'; // CORREÇÃO
