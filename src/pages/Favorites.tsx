@@ -5,9 +5,9 @@ import { useAuth } from '../contexts/AuthContext';
 import { getFavorites } from '../lib/supabase';
 import { Recipe } from '../types';
 import RecipeCard from '../components/recipes/RecipeCard';
-import Card from '../components/ui/Card';
-import Button from '../components/ui/Button';
-import Input from '../components/ui/Input';
+import Card from '@/components/ui/Card';
+import Button from '@/components/ui/Button';
+import Input from '@/components/ui/Input';
 
 const FavoritesPage: React.FC = () => {
   const { user } = useAuth();

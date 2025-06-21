@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { User, Mail, Calendar, Heart, Settings, Shield, Bell, Eye } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import Card from '../components/ui/Card';
-import Button from '../components/ui/Button';
-import Input from '../components/ui/Input';
+import Card from '@/components/ui/Card';
+import Button from '@/components/ui/Button';
+import Input from '@/components/ui/Input';
 
 const ProfilePage: React.FC = () => {
   const { userProfile, user } = useAuth();

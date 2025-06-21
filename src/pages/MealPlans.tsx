@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Calendar, Plus, Clock, Users, Target, ChefHat } from 'lucide-react';
-import Card from '../components/ui/Card';
-import Button from '../components/ui/Button';
+import Card from '@/components/ui/Card';
+import Button from '@/components/ui/Button';
 
 const MealPlansPage: React.FC = () => {
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
