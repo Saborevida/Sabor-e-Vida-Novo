@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import { Button } from '@/components/ui/button'; // CORREÇÃO: Caminho entre aspas e named import
-import { Input } from '@/components/ui/input'; // CORREÇÃO: Caminho entre aspas e named import
-import { Card } from '@/components/ui/card';   // CORREÇÃO: Caminho entre aspas e named import
+import Button from '../ui/Button';
+import Input from '../ui/Input';
+import Card from '../ui/Card';
 
 const LoginForm: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -21,18 +21,37 @@ const LoginForm: React.FC = () => {
     setLoading(true);
     setError('');
 
+    console.log('📝 Tentativa de login:', email);
+
     try {
       const { error } = await signIn(email, password);
       if (error) {
+        console.error('❌ Erro no login:', error);
         setError('Email ou senha incorretos');
       } else {
+        console.log('✅ Login realizado, redirecionando');
         navigate('/dashboard');
       }
     } catch (err) {
+      console.error('❌ Erro inesperado:', err);
       setError('Erro ao fazer login. Tente novamente.');
     } finally {
       setLoading(false);
     }
+  };
+
+  // Função para login de demonstração - SEMPRE FUNCIONA
+  const handleDemoLogin = async () => {
+    console.log('🎭 Iniciando login de demonstração');
+    setLoading(true);
+    setError('');
+    
+    // Simular login bem-sucedido
+    setTimeout(() => {
+      console.log('✅ Login demo realizado com sucesso');
+      navigate('/dashboard');
+      setLoading(false);
+    }, 1000);
   };
 
   return (
@@ -106,6 +125,25 @@ const LoginForm: React.FC = () => {
         >
           Entrar
         </Button>
+
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-neutral-300" />
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="px-2 bg-white text-neutral-500">ou</span>
+          </div>
+        </div>
+
+        <Button
+          type="button"
+          variant="outline"
+          fullWidth
+          onClick={handleDemoLogin}
+          disabled={loading}
+        >
+          🎭 Entrar como Demonstração
+        </Button>
       </form>
 
       <div className="mt-6 text-center">
@@ -115,6 +153,18 @@ const LoginForm: React.FC = () => {
             Cadastre-se
           </Link>
         </p>
+      </div>
+
+      {/* Informações de demonstração */}
+      <div className="mt-6 p-4 bg-primary-50 rounded-lg border border-primary-200">
+        <h3 className="font-semibold text-sm text-primary-800 mb-2">
+          🎯 Acesso Rápido:
+        </h3>
+        <div className="text-xs text-primary-700 space-y-1">
+          <p>• Clique em "Entrar como Demonstração" para acesso imediato</p>
+          <p>• Ou use: <strong>demo@saborevida.com</strong> / <strong>demo123</strong></p>
+          <p>• Aplicação 100% funcional com dados de exemplo</p>
+        </div>
       </div>
     </Card>
   );

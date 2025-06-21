@@ -1,67 +1,79 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Loader2 } from 'lucide-react'; // Ícone de carregamento
+import { DivideIcon as LucideIcon } from 'lucide-react';
 
-interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'outline' | 'ghost' | 'light' | 'danger';
+interface ButtonProps {
+  children: React.ReactNode;
+  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
   size?: 'sm' | 'md' | 'lg';
-  fullWidth?: boolean;
+  disabled?: boolean;
   loading?: boolean;
-  icon?: React.ElementType; // Tipo para ícone do lucide-react
+  icon?: LucideIcon;
   iconPosition?: 'left' | 'right';
+  fullWidth?: boolean;
+  onClick?: () => void;
+  type?: 'button' | 'submit' | 'reset';
+  className?: string;
 }
 
-// Componente Button exportado como named export
-export const Button: React.FC<ButtonProps> = ({ // Alterado para exportação nomeada
+const Button: React.FC<ButtonProps> = ({
   children,
   variant = 'primary',
   size = 'md',
-  fullWidth = false,
+  disabled = false,
   loading = false,
-  icon: Icon, // Renomeado para Icon para fácil uso
+  icon: Icon,
   iconPosition = 'left',
+  fullWidth = false,
+  onClick,
+  type = 'button',
   className = '',
-  disabled,
-  ...props
 }) => {
-  const baseClasses = `
-    inline-flex items-center justify-center font-medium rounded-lg transition-colors duration-200
-    focus:outline-none focus:ring-2 focus:ring-offset-2
-  `;
-
+  const baseClasses = 'inline-flex items-center justify-center font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2';
+  
   const variantClasses = {
-    primary: 'bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500',
-    outline: 'bg-transparent text-primary-600 border border-primary-600 hover:bg-primary-50 focus:ring-primary-500',
-    ghost: 'bg-transparent text-neutral-600 hover:bg-neutral-100 focus:ring-neutral-200',
-    light: 'bg-white text-primary-600 hover:bg-neutral-100 focus:ring-primary-500',
-    danger: 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500',
+    primary: 'bg-primary-500 text-white hover:bg-primary-600 focus:ring-primary-500 shadow-lg hover:shadow-xl',
+    secondary: 'bg-dark-800 text-white hover:bg-dark-700 focus:ring-dark-500 shadow-lg hover:shadow-xl',
+    outline: 'border-2 border-primary-500 text-primary-500 hover:bg-primary-500 hover:text-white focus:ring-primary-500',
+    ghost: 'text-dark-700 hover:bg-neutral-100 focus:ring-neutral-300',
+    danger: 'bg-red-500 text-white hover:bg-red-600 focus:ring-red-500 shadow-lg hover:shadow-xl',
   };
 
   const sizeClasses = {
-    sm: 'px-3 py-1.5 text-sm',
-    md: 'px-4 py-2 text-base',
+    sm: 'px-3 py-2 text-sm',
+    md: 'px-4 py-2.5 text-base',
     lg: 'px-6 py-3 text-lg',
   };
 
-  const fullWidthClass = fullWidth ? 'w-full' : '';
-  const disabledClasses = disabled || loading ? 'opacity-50 cursor-not-allowed' : '';
+  const classes = `
+    ${baseClasses}
+    ${variantClasses[variant]}
+    ${sizeClasses[size]}
+    ${fullWidth ? 'w-full' : ''}
+    ${disabled || loading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+    ${className}
+  `.trim();
 
   return (
     <motion.button
-      className={`${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${fullWidthClass} ${disabledClasses} ${className}`}
-      whileTap={{ scale: 0.98 }}
+      whileHover={!disabled && !loading ? { scale: 1.02 } : undefined}
+      whileTap={!disabled && !loading ? { scale: 0.98 } : undefined}
+      className={classes}
+      onClick={onClick}
       disabled={disabled || loading}
-      {...props}
+      type={type}
     >
       {loading ? (
-        <Loader2 className="animate-spin mr-2" size={20} /> // Ícone de carregamento
+        <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
       ) : (
         <>
-          {Icon && iconPosition === 'left' && <Icon className="mr-2" size={20} />}
+          {Icon && iconPosition === 'left' && <Icon size={20} className="mr-2" />}
           {children}
-          {Icon && iconPosition === 'right' && <Icon className="ml-2" size={20} />}
+          {Icon && iconPosition === 'right' && <Icon size={20} className="ml-2" />}
         </>
       )}
     </motion.button>
   );
 };
+
+export default Button;

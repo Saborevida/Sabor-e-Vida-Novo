@@ -13,10 +13,8 @@ import {
   ArrowRight,
   Check
 } from 'lucide-react';
-
-import Header from '@/components/layout/header'; // CORREÇÃO: Usa alias @/ e caminho em minúsculas
-import { Button } from '@/components/ui/button'; // CORREÇÃO: Usa named import e alias @/ para caminho em minúsculas
-import { Card } from '@/components/ui/card';     // CORREÇÃO: Usa named import e alias @/ para caminho em minúsculas
+import Button from '../components/ui/Button';
+import Card from '../components/ui/Card';
 
 const Home: React.FC = () => {
   const features = [
@@ -278,7 +276,6 @@ const Home: React.FC = () => {
                       {plan.cta}
                     </Button>
                   </Link>
-                  
                 </Card>
               </motion.div>
             ))}

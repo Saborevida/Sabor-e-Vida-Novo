@@ -1,25 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { User, Mail, Calendar, Heart, Settings, Shield, Bell, Eye, EyeOff } from 'lucide-react'; // Adicionado EyeOff para consistência
-import { useAuth } from '@/contexts/AuthContext'; // CORREÇÃO: Usa alias @/
-import { Card } from '@/components/ui/card';     // CORREÇÃO: Usa named import e alias @/
-import { Button } from '@/components/ui/button'; // CORREÇÃO: Usa named import e alias @/
-import { Input } from '@/components/ui/input';   // CORREÇÃO: Usa named import e alias @/
-import { supabase } from '@/lib/supabase'; // Importa Supabase para salvar perfil
+import { User, Mail, Calendar, Heart, Settings, Shield, Bell, Eye } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import Card from '../components/ui/Card';
+import Button from '../components/ui/Button';
+import Input from '../components/ui/Input';
 
 const ProfilePage: React.FC = () => {
-  const { userProfile, user, refetchUserProfile, loading: authLoading } = useAuth(); // Adicionado refetchUserProfile
+  const { userProfile, user } = useAuth();
   const [activeTab, setActiveTab] = useState('profile');
   const [isEditing, setIsEditing] = useState(false);
-  const [localUserProfile, setLocalUserProfile] = useState(userProfile); // Estado local para edição
-  const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
-  const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
-
-  useEffect(() => {
-    // Sincroniza o perfil do usuário do contexto para o estado local ao carregar ou atualizar
-    setLocalUserProfile(userProfile);
-  }, [userProfile]);
 
   const tabs = [
     { id: 'profile', label: 'Perfil', icon: User },
@@ -49,94 +39,6 @@ const ProfilePage: React.FC = () => {
     'Cetogênica'
   ];
 
-  const handleSaveProfile = async () => {
-    if (!user || !localUserProfile) return;
-
-    setSaving(true);
-    setSaveError(null);
-    setSaveSuccess(null);
-
-    try {
-      const { error } = await supabase
-        .from('users')
-        .update({
-          name: localUserProfile.name,
-          date_of_birth: localUserProfile.date_of_birth, // CORREÇÃO: snake_case
-          diabetes_type: localUserProfile.diabetes_type, // CORREÇÃO: snake_case
-        })
-        .eq('id', user.id);
-
-      if (error) {
-        throw error;
-      }
-      setSaveSuccess('Perfil atualizado com sucesso!');
-      setIsEditing(false); // Sair do modo de edição
-      refetchUserProfile(); // Re-buscar o perfil para atualizar o contexto
-    } catch (err: any) {
-      console.error('❌ Erro ao salvar perfil:', err.message);
-      setSaveError('Falha ao salvar alterações: ' + err.message);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleSaveHealthGoals = async () => {
-    if (!user || !localUserProfile) return;
-
-    setSaving(true);
-    setSaveError(null);
-    setSaveSuccess(null);
-
-    try {
-      const { error } = await supabase
-        .from('users')
-        .update({
-          health_goals: localUserProfile.health_goals // CORREÇÃO: snake_case
-        })
-        .eq('id', user.id);
-
-      if (error) {
-        throw error;
-      }
-      setSaveSuccess('Objetivos de saúde atualizados!');
-      refetchUserProfile();
-    } catch (err: any) {
-      console.error('❌ Erro ao salvar objetivos de saúde:', err.message);
-      setSaveError('Falha ao salvar objetivos: ' + err.message);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleSavePreferences = async () => {
-    if (!user || !localUserProfile) return;
-
-    setSaving(true);
-    setSaveError(null);
-    setSaveSuccess(null);
-
-    try {
-      const { error } = await supabase
-        .from('users')
-        .update({
-          dietary_preferences: localUserProfile.dietary_preferences // CORREÇÃO: snake_case
-        })
-        .eq('id', user.id);
-
-      if (error) {
-        throw error;
-      }
-      setSaveSuccess('Preferências alimentares salvas!');
-      refetchUserProfile();
-    } catch (err: any) {
-      console.error('❌ Erro ao salvar preferências:', err.message);
-      setSaveError('Falha ao salvar preferências: ' + err.message);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-
   const renderProfileTab = () => (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -144,11 +46,7 @@ const ProfilePage: React.FC = () => {
         <Button
           variant="outline"
           size="sm"
-          onClick={() => {
-            setIsEditing(!isEditing);
-            // Reset local state if canceling
-            if (isEditing) setLocalUserProfile(userProfile);
-          }}
+          onClick={() => setIsEditing(!isEditing)}
         >
           {isEditing ? 'Cancelar' : 'Editar'}
         </Button>
@@ -158,8 +56,7 @@ const ProfilePage: React.FC = () => {
         <Input
           label="Nome completo"
           type="text"
-          value={localUserProfile?.name || ''}
-          onChange={(e) => setLocalUserProfile(prev => prev ? { ...prev, name: e.target.value } : null)}
+          value={userProfile?.name || ''}
           disabled={!isEditing}
           placeholder="Seu nome completo"
         />
@@ -175,8 +72,7 @@ const ProfilePage: React.FC = () => {
         <Input
           label="Data de nascimento"
           type="date"
-          value={localUserProfile?.date_of_birth ? localUserProfile.date_of_birth.split('T')[0] : ''} // CORREÇÃO: snake_case e formato correto
-          onChange={(e) => setLocalUserProfile(prev => prev ? { ...prev, date_of_birth: e.target.value } : null)}
+          value={userProfile?.dateOfBirth ? userProfile.dateOfBirth.toISOString().split('T')[0] : ''}
           disabled={!isEditing}
           icon={Calendar}
         />
@@ -188,8 +84,7 @@ const ProfilePage: React.FC = () => {
           <select
             disabled={!isEditing}
             className="block w-full px-3 py-2.5 text-base border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:bg-neutral-50"
-            value={localUserProfile?.diabetes_type || 'type2'} // CORREÇÃO: snake_case
-            onChange={(e) => setLocalUserProfile(prev => prev ? { ...prev, diabetes_type: e.target.value } : null)}
+            value={userProfile?.diabetesType || 'type2'}
           >
             <option value="type1">Tipo 1</option>
             <option value="type2">Tipo 2</option>
@@ -201,16 +96,14 @@ const ProfilePage: React.FC = () => {
 
       {isEditing && (
         <div className="flex space-x-4">
-          <Button variant="primary" loading={saving} onClick={handleSaveProfile}>
+          <Button variant="primary">
             Salvar Alterações
           </Button>
-          <Button variant="outline" onClick={() => setIsEditing(false)} disabled={saving}>
+          <Button variant="outline" onClick={() => setIsEditing(false)}>
             Cancelar
           </Button>
         </div>
       )}
-      {saveError && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">{saveError}</div>}
-      {saveSuccess && <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg">{saveSuccess}</div>}
     </div>
   );
 
@@ -228,13 +121,7 @@ const ProfilePage: React.FC = () => {
               <input
                 type="checkbox"
                 className="w-4 h-4 text-primary-600 border-neutral-300 rounded focus:ring-primary-500"
-                checked={localUserProfile?.health_goals?.includes(goal) || false} // CORREÇÃO: snake_case e 'checked'
-                onChange={(e) => {
-                  const updatedGoals = e.target.checked
-                    ? [...(localUserProfile?.health_goals || []), goal]
-                    : (localUserProfile?.health_goals || []).filter(g => g !== goal);
-                  setLocalUserProfile(prev => prev ? { ...prev, health_goals: updatedGoals } : null);
-                }}
+                defaultChecked={userProfile?.healthGoals?.includes(goal)}
               />
               <span className="ml-2 text-sm text-dark-700">{goal}</span>
             </label>
@@ -249,31 +136,23 @@ const ProfilePage: React.FC = () => {
             label="Peso atual (kg)"
             type="number"
             placeholder="70"
-            value={localUserProfile?.current_weight || ''} // Exemplo: assuming new field
-            onChange={(e) => setLocalUserProfile(prev => prev ? { ...prev, current_weight: parseFloat(e.target.value) } : null)}
           />
           <Input
             label="Altura (cm)"
             type="number"
             placeholder="170"
-            value={localUserProfile?.height_cm || ''} // Exemplo: assuming new field
-            onChange={(e) => setLocalUserProfile(prev => prev ? { ...prev, height_cm: parseFloat(e.target.value) } : null)}
           />
           <Input
             label="Meta de peso (kg)"
             type="number"
             placeholder="65"
-            value={localUserProfile?.target_weight || ''} // Exemplo: assuming new field
-            onChange={(e) => setLocalUserProfile(prev => prev ? { ...prev, target_weight: parseFloat(e.target.value) } : null)}
           />
         </div>
       </div>
 
-      <Button variant="primary" loading={saving} onClick={handleSaveHealthGoals}>
+      <Button variant="primary">
         Salvar Objetivos
       </Button>
-      {saveError && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">{saveError}</div>}
-      {saveSuccess && <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg">{saveSuccess}</div>}
     </div>
   );
 
@@ -291,13 +170,7 @@ const ProfilePage: React.FC = () => {
               <input
                 type="checkbox"
                 className="w-4 h-4 text-primary-600 border-neutral-300 rounded focus:ring-primary-500"
-                checked={localUserProfile?.dietary_preferences?.includes(preference) || false} // CORREÇÃO: snake_case e 'checked'
-                onChange={(e) => {
-                  const updatedPreferences = e.target.checked
-                    ? [...(localUserProfile?.dietary_preferences || []), preference]
-                    : (localUserProfile?.dietary_preferences || []).filter(p => p !== preference);
-                  setLocalUserProfile(prev => prev ? { ...prev, dietary_preferences: updatedPreferences } : null);
-                }}
+                defaultChecked={userProfile?.dietaryPreferences?.includes(preference)}
               />
               <span className="ml-2 text-sm text-dark-700">{preference}</span>
             </label>
@@ -316,8 +189,7 @@ const ProfilePage: React.FC = () => {
             <input
               type="checkbox"
               className="w-4 h-4 text-primary-600 border-neutral-300 rounded focus:ring-primary-500"
-              defaultChecked={localUserProfile?.show_low_ig_recipes || false} // Exemplo: new field
-              onChange={(e) => setLocalUserProfile(prev => prev ? { ...prev, show_low_ig_recipes: e.target.checked } : null)}
+              defaultChecked={true}
             />
           </div>
 
@@ -329,18 +201,15 @@ const ProfilePage: React.FC = () => {
             <input
               type="checkbox"
               className="w-4 h-4 text-primary-600 border-neutral-300 rounded focus:ring-primary-500"
-              defaultChecked={localUserProfile?.personalized_suggestions || false} // Exemplo: new field
-              onChange={(e) => setLocalUserProfile(prev => prev ? { ...prev, personalized_suggestions: e.target.checked } : null)}
+              defaultChecked={true}
             />
           </div>
         </div>
       </div>
 
-      <Button variant="primary" loading={saving} onClick={handleSavePreferences}>
+      <Button variant="primary">
         Salvar Preferências
       </Button>
-      {saveError && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">{saveError}</div>}
-      {saveSuccess && <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg">{saveSuccess}</div>}
     </div>
   );
 
@@ -357,8 +226,7 @@ const ProfilePage: React.FC = () => {
           <input
             type="checkbox"
             className="w-4 h-4 text-primary-600 border-neutral-300 rounded focus:ring-primary-500"
-            defaultChecked={localUserProfile?.reminders_on || false} // Exemplo: new field
-            onChange={(e) => setLocalUserProfile(prev => prev ? { ...prev, reminders_on: e.target.checked } : null)}
+            defaultChecked={true}
           />
         </div>
 
@@ -370,8 +238,7 @@ const ProfilePage: React.FC = () => {
           <input
             type="checkbox"
             className="w-4 h-4 text-primary-600 border-neutral-300 rounded focus:ring-primary-500"
-            defaultChecked={localUserProfile?.new_recipes_notifications || false} // Exemplo: new field
-            onChange={(e) => setLocalUserProfile(prev => prev ? { ...prev, new_recipes_notifications: e.target.checked } : null)}
+            defaultChecked={true}
           />
         </div>
 
@@ -383,8 +250,7 @@ const ProfilePage: React.FC = () => {
           <input
             type="checkbox"
             className="w-4 h-4 text-primary-600 border-neutral-300 rounded focus:ring-primary-500"
-            defaultChecked={localUserProfile?.educational_tips_notifications || false} // Exemplo: new field
-            onChange={(e) => setLocalUserProfile(prev => prev ? { ...prev, educational_tips_notifications: e.target.checked } : null)}
+            defaultChecked={true}
           />
         </div>
 
@@ -396,17 +262,14 @@ const ProfilePage: React.FC = () => {
           <input
             type="checkbox"
             className="w-4 h-4 text-primary-600 border-neutral-300 rounded focus:ring-primary-500"
-            defaultChecked={localUserProfile?.weekly_reports || false} // Exemplo: new field
-            onChange={(e) => setLocalUserProfile(prev => prev ? { ...prev, weekly_reports: e.target.checked } : null)}
+            defaultChecked={false}
           />
         </div>
       </div>
 
-      <Button variant="primary" loading={saving} onClick={handleSavePreferences}> {/* Reutilizando handleSavePreferences, ajustar para new func if needed */}
+      <Button variant="primary">
         Salvar Configurações
       </Button>
-      {saveError && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">{saveError}</div>}
-      {saveSuccess && <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg">{saveSuccess}</div>}
     </div>
   );
 
@@ -423,8 +286,7 @@ const ProfilePage: React.FC = () => {
           <input
             type="checkbox"
             className="w-4 h-4 text-primary-600 border-neutral-300 rounded focus:ring-primary-500"
-            defaultChecked={localUserProfile?.public_profile || false} // Exemplo: new field
-            onChange={(e) => setLocalUserProfile(prev => prev ? { ...prev, public_profile: e.target.checked } : null)}
+            defaultChecked={false}
           />
         </div>
 
@@ -436,8 +298,7 @@ const ProfilePage: React.FC = () => {
           <input
             type="checkbox"
             className="w-4 h-4 text-primary-600 border-neutral-300 rounded focus:ring-primary-500"
-            defaultChecked={localUserProfile?.share_progress || false} // Exemplo: new field
-            onChange={(e) => setLocalUserProfile(prev => prev ? { ...prev, share_progress: e.target.checked } : null)}
+            defaultChecked={false}
           />
         </div>
 
@@ -449,8 +310,7 @@ const ProfilePage: React.FC = () => {
           <input
             type="checkbox"
             className="w-4 h-4 text-primary-600 border-neutral-300 rounded focus:ring-primary-500"
-            defaultChecked={localUserProfile?.data_analysis_opt_in || false} // Exemplo: new field
-            onChange={(e) => setLocalUserProfile(prev => prev ? { ...prev, data_analysis_opt_in: e.target.checked } : null)}
+            defaultChecked={true}
           />
         </div>
       </div>
@@ -473,26 +333,6 @@ const ProfilePage: React.FC = () => {
   );
 
   const renderTabContent = () => {
-    if (authLoading) { // Mostra loading enquanto autenticação carrega
-        return (
-            <div className="text-center py-12">
-                <div className="w-12 h-12 border-4 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                <p className="text-neutral-600">Carregando perfil...</p>
-            </div>
-        );
-    }
-    if (!user) { // Redireciona ou mostra erro se não houver usuário logado
-        // Isso normalmente seria tratado pelo ProtectedRoute no App.tsx
-        return (
-            <div className="text-center py-12">
-                <h3 className="text-xl font-semibold text-dark-800 mb-2">Acesso Negado</h3>
-                <p className="text-neutral-600 mb-4">Faça login para ver esta página.</p>
-                <Button onClick={() => window.location.href = '/login'}>Ir para Login</Button>
-            </div>
-        );
-    }
-
-
     switch (activeTab) {
       case 'profile': return renderProfileTab();
       case 'health': return renderHealthTab();

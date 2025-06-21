@@ -1,38 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { BookOpen, Search, Filter, Clock, Star, Users, TrendingUp } from 'lucide-react';
-import { Card } from '@/components/ui/card';     // CORREÇÃO: Usa named import e alias @/
-import { Button } from '@/components/ui/button'; // CORREÇÃO: Usa named import e alias @/
-import { Input } from '@/components/ui/input';   // CORREÇÃO: Usa named import e alias @/
-import { supabase } from '@/lib/supabase'; // Importa a instância do Supabase
-
-// Tipagem para um termo do glossário do Supabase
-interface GlossaryTerm {
-  id: string;
-  term: string;
-  definition: string;
-  category: string;
-  tags: string[];
-  created_at: string;
-  updated_at: string;
-}
-
-// Adaptação para o formato de 'artigo' esperado pelo componente
-interface Article extends GlossaryTerm {
-  title: string;
-  excerpt: string;
-  readTime: number; // Mock data
-  difficulty: string; // Mock data
-  rating: number; // Mock data
-  views: number; // Mock data
-  image: string; // Placeholder image
-}
+import Card from '../components/ui/Card';
+import Button from '../components/ui/Button';
+import Input from '../components/ui/Input';
 
 const EducationPage: React.FC = () => {
-  const [articles, setArticles] = useState<Article[]>([]);
-  const [filteredArticles, setFilteredArticles] = useState<Article[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
 
@@ -40,76 +13,95 @@ const EducationPage: React.FC = () => {
     { value: 'all', label: 'Todos os Tópicos' },
     { value: 'nutrition', label: 'Nutrição' },
     { value: 'diabetes', label: 'Diabetes' },
-    { value: 'recipes', label: 'Técnicas Culinárias' }, // Mantido 'recipes' para categoria de artigos
+    { value: 'recipes', label: 'Técnicas Culinárias' },
     { value: 'lifestyle', label: 'Estilo de Vida' },
     { value: 'supplements', label: 'Suplementos' },
   ];
 
-  // Função para buscar termos do glossário do Supabase
-  const fetchGlossaryTerms = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const { data, error } = await supabase
-        .from('glossary') // Nome da tabela que esperamos no DB (singular)
-        .select('*')
-        .order('term', { ascending: true });
-
-      if (error) {
-        throw error;
-      }
-
-      // Mapeia os termos do glossário para o formato de 'artigo'
-      const mappedArticles: Article[] = (data || []).map(term => ({
-        ...term,
-        title: term.term, // 'term' do glossário vira 'title' do artigo
-        excerpt: term.definition, // 'definition' do glossário vira 'excerpt' do artigo
-        // Valores mock ou padrão para campos que não existem no schema do glossário
-        readTime: Math.floor(Math.random() * 5) + 5, // 5-9 minutos
-        difficulty: ['Iniciante', 'Intermediário', 'Avançado'][Math.floor(Math.random() * 3)],
-        rating: parseFloat((Math.random() * (5 - 3) + 3).toFixed(1)), // 3.0 - 5.0
-        views: Math.floor(Math.random() * (2000 - 500) + 500), // 500-2000 views
-        image: 'https://placehold.co/600x400/EAEAEA/272525?text=Artigo', // Imagem placeholder
-      }));
-
-      console.log('✅ Termos do glossário carregados:', mappedArticles.length);
-      setArticles(mappedArticles);
-    } catch (err: any) {
-      console.error('❌ Erro ao carregar termos do glossário:', err.message);
-      setError('Falha ao carregar conteúdo educacional.');
-      setArticles([]);
-    } finally {
-      setLoading(false);
+  const articles = [
+    {
+      id: '1',
+      title: 'Índice Glicêmico: O que é e como usar na sua alimentação',
+      excerpt: 'Entenda como o índice glicêmico dos alimentos afeta seus níveis de açúcar no sangue e aprenda a fazer escolhas mais inteligentes.',
+      category: 'diabetes',
+      readTime: 8,
+      difficulty: 'Iniciante',
+      rating: 4.8,
+      views: 1250,
+      image: 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
+      tags: ['índice glicêmico', 'controle glicêmico', 'alimentação']
+    },
+    {
+      id: '2',
+      title: 'Carboidratos Complexos vs Simples: Qual a diferença?',
+      excerpt: 'Descubra as diferenças entre carboidratos complexos e simples e como cada tipo afeta seu organismo.',
+      category: 'nutrition',
+      readTime: 6,
+      difficulty: 'Iniciante',
+      rating: 4.9,
+      views: 980,
+      image: 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
+      tags: ['carboidratos', 'nutrição', 'metabolismo']
+    },
+    {
+      id: '3',
+      title: 'Técnicas de Cocção que Preservam Nutrientes',
+      excerpt: 'Aprenda métodos de preparo que mantêm os nutrientes dos alimentos e potencializam seus benefícios.',
+      category: 'recipes',
+      readTime: 10,
+      difficulty: 'Intermediário',
+      rating: 4.7,
+      views: 750,
+      image: 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
+      tags: ['cocção', 'nutrientes', 'técnicas culinárias']
+    },
+    {
+      id: '4',
+      title: 'Exercícios e Alimentação: A combinação perfeita',
+      excerpt: 'Como sincronizar sua alimentação com exercícios físicos para otimizar o controle da diabetes.',
+      category: 'lifestyle',
+      readTime: 12,
+      difficulty: 'Intermediário',
+      rating: 4.6,
+      views: 1100,
+      image: 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
+      tags: ['exercícios', 'alimentação', 'diabetes']
+    },
+    {
+      id: '5',
+      title: 'Suplementos Naturais para Diabéticos',
+      excerpt: 'Conheça suplementos naturais que podem auxiliar no controle glicêmico e melhorar sua qualidade de vida.',
+      category: 'supplements',
+      readTime: 15,
+      difficulty: 'Avançado',
+      rating: 4.5,
+      views: 650,
+      image: 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
+      tags: ['suplementos', 'natural', 'controle glicêmico']
+    },
+    {
+      id: '6',
+      title: 'Planejamento de Refeições: Estratégias Práticas',
+      excerpt: 'Dicas essenciais para planejar suas refeições da semana de forma eficiente e saudável.',
+      category: 'nutrition',
+      readTime: 9,
+      difficulty: 'Iniciante',
+      rating: 4.8,
+      views: 1350,
+      image: 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
+      tags: ['planejamento', 'refeições', 'organização']
     }
-  };
+  ];
 
-  useEffect(() => {
-    fetchGlossaryTerms();
-  }, []); // Carrega os termos uma vez ao montar o componente
-
-  useEffect(() => {
-    filterArticles();
-  }, [articles, searchTerm, selectedCategory]);
-
-  const filterArticles = () => {
-    let filtered = articles;
-
-    // Filter by search term
-    if (searchTerm) {
-      filtered = filtered.filter(article =>
-        article.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        article.excerpt.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (article.tags && article.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())))
-      );
-    }
-
-    // Filter by category
-    if (selectedCategory !== 'all') {
-      filtered = filtered.filter(article => article.category === selectedCategory);
-    }
-
-    setFilteredArticles(filtered);
-  };
+  const filteredArticles = articles.filter(article => {
+    const matchesSearch = article.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         article.excerpt.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         article.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
+    
+    const matchesCategory = selectedCategory === 'all' || article.category === selectedCategory;
+    
+    return matchesSearch && matchesCategory;
+  });
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
@@ -130,29 +122,6 @@ const EducationPage: React.FC = () => {
     };
     return categoryMap[category as keyof typeof categoryMap] || category;
   };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-neutral-600">Carregando conteúdo educacional...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
-        <div className="text-center bg-white p-6 rounded-lg shadow-sm">
-          <h1 className="text-xl font-heading font-bold text-dark-800 mb-4">Erro</h1>
-          <p className="text-red-600 mb-4">{error}</p>
-          <Button onClick={fetchGlossaryTerms}>Tentar Novamente</Button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-neutral-50 py-8">
@@ -192,7 +161,7 @@ const EducationPage: React.FC = () => {
               <Users className="w-6 h-6 text-blue-600" />
             </div>
             <h3 className="font-semibold text-dark-800">Leitores</h3>
-            <p className="text-2xl font-bold text-blue-600">5.2k</p> {/* Mock data */}
+            <p className="text-2xl font-bold text-blue-600">5.2k</p>
           </Card>
 
           <Card className="text-center">
@@ -200,7 +169,7 @@ const EducationPage: React.FC = () => {
               <Star className="w-6 h-6 text-green-600" />
             </div>
             <h3 className="font-semibold text-dark-800">Avaliação</h3>
-            <p className="text-2xl font-bold text-green-600">4.7</p> {/* Mock data */}
+            <p className="text-2xl font-bold text-green-600">4.7</p>
           </Card>
 
           <Card className="text-center">
@@ -208,7 +177,7 @@ const EducationPage: React.FC = () => {
               <TrendingUp className="w-6 h-6 text-yellow-600" />
             </div>
             <h3 className="font-semibold text-dark-800">Crescimento</h3>
-            <p className="text-2xl font-bold text-yellow-600">+23%</p> {/* Mock data */}
+            <p className="text-2xl font-bold text-yellow-600">+23%</p>
           </Card>
         </motion.div>
 
@@ -251,24 +220,22 @@ const EducationPage: React.FC = () => {
         </motion.div>
 
         {/* Results Summary */}
-        {filteredArticles.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="mb-6"
-          >
-            <div className="flex items-center justify-between">
-              <p className="text-neutral-600">
-                {filteredArticles.length} artigo{filteredArticles.length !== 1 ? 's' : ''} encontrado{filteredArticles.length !== 1 ? 's' : ''}
-              </p>
-              <div className="flex items-center space-x-2 text-sm text-neutral-500">
-                <Filter size={16} />
-                <span>Filtros ativos</span>
-              </div>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="mb-6"
+        >
+          <div className="flex items-center justify-between">
+            <p className="text-neutral-600">
+              {filteredArticles.length} artigo{filteredArticles.length !== 1 ? 's' : ''} encontrado{filteredArticles.length !== 1 ? 's' : ''}
+            </p>
+            <div className="flex items-center space-x-2 text-sm text-neutral-500">
+              <Filter size={16} />
+              <span>Filtros ativos</span>
             </div>
-          </motion.div>
-        )}
+          </div>
+        </motion.div>
 
         {/* Articles Grid */}
         {filteredArticles.length > 0 ? (

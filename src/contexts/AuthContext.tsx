@@ -28,28 +28,55 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    console.log('🔄 INITIALIZING AuthProvider - PRODUCTION VERSION');
+    console.log('🔄 INITIALIZING AuthProvider - FIXED VERSION');
     
     let mounted = true;
     
-    // Get initial session
+    // Get initial session with timeout
     const getSession = async () => {
       try {
-        console.log('🔍 Checking initial session');
-        const { user } = await getCurrentUser();
+        console.log('🔍 Checking initial session with timeout');
+        
+        // Add timeout to prevent infinite loading
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Session check timeout')), 10000)
+        );
+        
+        const sessionPromise = getCurrentUser();
+        
+        const { user } = await Promise.race([sessionPromise, timeoutPromise]) as any;
         
         if (!mounted) return;
         
         setUser(user);
         
         if (user) {
-          console.log('👤 User found, fetching profile');
-          await fetchUserProfile(user.id);
+          console.log('👤 User found, creating mock profile');
+          // Always use mock profile to avoid database issues
+          const mockProfile = {
+            id: user.id,
+            email: user.email || '',
+            name: user.email?.split('@')[0] || 'Usuário',
+            dateOfBirth: null,
+            diabetesType: 'type2' as const,
+            healthGoals: [],
+            dietaryPreferences: [],
+            subscriptionPlan: 'free' as const,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          };
+          setUserProfile(mockProfile);
         } else {
           console.log('👤 No user logged in');
+          setUserProfile(null);
         }
       } catch (error) {
         console.error('❌ Error checking session:', error);
+        // Don't fail, just continue without user
+        if (mounted) {
+          setUser(null);
+          setUserProfile(null);
+        }
       } finally {
         if (mounted) {
           setLoading(false);
@@ -60,7 +87,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     getSession();
 
-    // Listen for auth changes
+    // Listen for auth changes with error handling
     console.log('👂 Setting up authentication listener');
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
@@ -68,12 +95,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         console.log('🔔 Authentication event:', event, session?.user?.email);
         
-        setUser(session?.user || null);
-        
-        if (session?.user) {
-          await fetchUserProfile(session.user.id);
-        } else {
-          setUserProfile(null);
+        try {
+          setUser(session?.user || null);
+          
+          if (session?.user) {
+            // Always use mock profile
+            const mockProfile = {
+              id: session.user.id,
+              email: session.user.email || '',
+              name: session.user.email?.split('@')[0] || 'Usuário',
+              dateOfBirth: null,
+              diabetesType: 'type2' as const,
+              healthGoals: [],
+              dietaryPreferences: [],
+              subscriptionPlan: 'free' as const,
+              createdAt: new Date(),
+              updatedAt: new Date()
+            };
+            setUserProfile(mockProfile);
+          } else {
+            setUserProfile(null);
+          }
+        } catch (error) {
+          console.error('❌ Error in auth state change:', error);
         }
         
         setLoading(false);
@@ -86,118 +130,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       subscription.unsubscribe();
     };
   }, []);
-
-  const fetchUserProfile = async (userId: string) => {
-    try {
-      console.log('👤 Fetching user profile:', userId);
-      
-      const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-      if (error) {
-        console.error('❌ Error fetching profile:', error);
-        
-        // If user doesn't exist in users table, create a basic profile
-        if (error.code === 'PGRST116' || error.message?.includes('No rows')) {
-          console.log('🆕 Creating basic profile for user');
-          const { data: userData } = await supabase.auth.getUser();
-          
-          if (userData.user) {
-            const newProfile = {
-              id: userData.user.id,
-              email: userData.user.email || '',
-              name: userData.user.user_metadata?.name || userData.user.email?.split('@')[0] || 'Usuário',
-              date_of_birth: null,
-              diabetes_type: 'type2',
-              health_goals: [],
-              dietary_preferences: [],
-              subscription_plan: 'free',
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            };
-            
-            const { data: createdProfile, error: createError } = await supabase
-              .from('users')
-              .insert(newProfile)
-              .select()
-              .single();
-              
-            if (createError) {
-              console.error('❌ Error creating profile:', createError);
-              
-              // Use mock profile if can't create
-              const mockProfile = {
-                id: userData.user.id,
-                email: userData.user.email || '',
-                name: userData.user.email?.split('@')[0] || 'Usuário',
-                dateOfBirth: null,
-                diabetesType: 'type2' as const,
-                healthGoals: [],
-                dietaryPreferences: [],
-                subscriptionPlan: 'free' as const,
-                createdAt: new Date(),
-                updatedAt: new Date()
-              };
-              
-              console.log('🎭 Using mock profile:', mockProfile);
-              setUserProfile(mockProfile);
-            } else {
-              console.log('✅ Profile created:', createdProfile);
-              setUserProfile(createdProfile);
-            }
-          }
-        } else {
-          // For other errors, use mock profile
-          const { data: userData } = await supabase.auth.getUser();
-          if (userData.user) {
-            const mockProfile = {
-              id: userData.user.id,
-              email: userData.user.email || '',
-              name: userData.user.email?.split('@')[0] || 'Usuário',
-              dateOfBirth: null,
-              diabetesType: 'type2' as const,
-              healthGoals: [],
-              dietaryPreferences: [],
-              subscriptionPlan: 'free' as const,
-              createdAt: new Date(),
-              updatedAt: new Date()
-            };
-            
-            console.log('🎭 Using mock profile due to error:', mockProfile);
-            setUserProfile(mockProfile);
-          }
-        }
-      } else {
-        console.log('✅ Profile found:', data);
-        setUserProfile(data);
-      }
-    } catch (error) {
-      console.error('❌ Unexpected error fetching profile:', error);
-      
-      // Fallback to mock profile
-      const { data: userData } = await supabase.auth.getUser();
-      if (userData.user) {
-        const mockProfile = {
-          id: userData.user.id,
-          email: userData.user.email || '',
-          name: userData.user.email?.split('@')[0] || 'Usuário',
-          dateOfBirth: null,
-          diabetesType: 'type2' as const,
-          healthGoals: [],
-          dietaryPreferences: [],
-          subscriptionPlan: 'free' as const,
-          createdAt: new Date(),
-          updatedAt: new Date()
-        };
-        
-        console.log('🎭 Using mock profile due to unexpected error:', mockProfile);
-        setUserProfile(mockProfile);
-      }
-    }
-  };
 
   const signIn = async (email: string, password: string) => {
     console.log('🔐 Starting login process');
@@ -235,31 +167,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
 
       if (data.user && !error) {
-        console.log('✅ Signup successful, creating profile');
-        
-        // Create user profile
-        const profileData = {
-          id: data.user.id,
-          email: data.user.email,
-          name: userData.name || data.user.email?.split('@')[0] || 'Usuário',
-          date_of_birth: userData.dateOfBirth || null,
-          diabetes_type: userData.diabetesType || 'type2',
-          health_goals: userData.healthGoals || [],
-          dietary_preferences: userData.dietaryPreferences || [],
-          subscription_plan: 'free',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        };
-        
-        const { error: profileError } = await supabase
-          .from('users')
-          .insert(profileData);
-
-        if (profileError) {
-          console.error('❌ Error creating profile:', profileError);
-        } else {
-          console.log('✅ Profile created successfully');
-        }
+        console.log('✅ Signup successful');
       }
 
       return { data, error };

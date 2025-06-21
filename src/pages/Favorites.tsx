@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Heart, Search, Filter, Clock, Users, Star } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext'; // Mantido como importação relativa se 'contexts' não tiver alias @/
-import { getFavorites } from '../lib/supabase'; // Mantido como importação relativa se 'lib' não tiver alias @/
-import { Recipe } from '../types'; // Mantido como importação relativa se 'types' não tiver alias @/
-import RecipeCard from '../components/recipes/recipecard'; // Mantido como importação relativa se não usar alias para 'recipes'
-import { Card } from '@/components/ui/card';     // CORREÇÃO: Usa named import e alias @/ para caminho em minúsculas
-import { Button } from '@/components/ui/button'; // CORREÇÃO: Usa named import e alias @/ para caminho em minúsculas
-import { Input } from '@/components/ui/input';   // CORREÇÃO: Usa named import e alias @/ para caminho em minúsculas
+import { useAuth } from '../contexts/AuthContext';
+import { getFavorites } from '../lib/supabase';
+import { Recipe } from '../types';
+import RecipeCard from '../components/recipes/RecipeCard';
+import Card from '../components/ui/Card';
+import Button from '../components/ui/Button';
+import Input from '../components/ui/Input';
 
 const FavoritesPage: React.FC = () => {
   const { user } = useAuth();
@@ -30,39 +30,30 @@ const FavoritesPage: React.FC = () => {
   useEffect(() => {
     if (user) {
       fetchFavorites();
-    } else {
-      setLoading(false); // Parar o loading se não houver usuário logado
-      // Opcional: redirecionar para login ou mostrar mensagem
     }
-  }, [user]); // Adicionado user como dependência para re-buscar se o usuário mudar
+  }, [user]);
 
   useEffect(() => {
     filterFavorites();
   }, [favorites, searchTerm, selectedCategory]);
 
   const fetchFavorites = async () => {
-    if (!user) {
-      setLoading(false);
-      return; // Sair se não houver usuário logado
-    }
+    if (!user) return;
 
     try {
-      console.log('❤️ Carregando favoritos para o usuário:', user.id);
-      // Assegure que getFavorites está configurado em lib/supabase para buscar a tabela 'favorites'
-      // e join com 'recipes'
+      console.log('❤️ Carregando favoritos...');
       const { data, error } = await getFavorites(user.id);
       
       if (data && !error) {
-        // Mapeia para pegar o objeto de receita do join, se a estrutura for { id, user_id, recipe_id, recipes: {...recipe_object} }
-        const favoriteRecipes = data.map((fav: any) => fav.recipes).filter(Boolean); // 'any' temporário, idealmente tipar 'fav'
+        const favoriteRecipes = data.map(fav => fav.recipes).filter(Boolean);
         console.log('✅ Favoritos carregados:', favoriteRecipes.length);
         setFavorites(favoriteRecipes);
       } else {
-        console.log('ℹ️ Nenhum favorito encontrado ou erro:', error?.message);
+        console.log('ℹ️ Nenhum favorito encontrado');
         setFavorites([]);
       }
-    } catch (error: any) {
-      console.error('❌ Erro ao carregar favoritos:', error.message);
+    } catch (error) {
+      console.error('❌ Erro ao carregar favoritos:', error);
       setFavorites([]);
     } finally {
       setLoading(false);
@@ -76,7 +67,7 @@ const FavoritesPage: React.FC = () => {
     if (searchTerm) {
       filtered = filtered.filter(recipe =>
         recipe.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (recipe.tags && recipe.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())))
+        recipe.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
       );
     }
 
@@ -89,7 +80,7 @@ const FavoritesPage: React.FC = () => {
   };
 
   const handleFavoriteChange = () => {
-    fetchFavorites(); // Rebusca favoritos após uma mudança
+    fetchFavorites();
   };
 
   if (loading) {
@@ -146,7 +137,7 @@ const FavoritesPage: React.FC = () => {
             <h3 className="font-semibold text-dark-800">Tempo Médio</h3>
             <p className="text-2xl font-bold text-blue-600">
               {favorites.length > 0 
-                ? Math.round(favorites.reduce((acc, recipe) => acc + recipe.prep_time, 0) / favorites.length) // Usando prep_time
+                ? Math.round(favorites.reduce((acc, recipe) => acc + recipe.prepTime, 0) / favorites.length)
                 : 0
               }
             </p>
@@ -160,7 +151,7 @@ const FavoritesPage: React.FC = () => {
             <h3 className="font-semibold text-dark-800">IG Médio</h3>
             <p className="text-2xl font-bold text-green-600">
               {favorites.length > 0 
-                ? Math.round(favorites.reduce((acc, recipe) => acc + recipe.nutrition_info.glycemic_index, 0) / favorites.length) // Usando nutrition_info.glycemic_index
+                ? Math.round(favorites.reduce((acc, recipe) => acc + recipe.nutritionInfo.glycemicIndex, 0) / favorites.length)
                 : 0
               }
             </p>
@@ -172,7 +163,7 @@ const FavoritesPage: React.FC = () => {
             </div>
             <h3 className="font-semibold text-dark-800">Porções Totais</h3>
             <p className="text-2xl font-bold text-yellow-600">
-              {favorites.reduce((acc, recipe) => acc + recipe.nutrition_info.servings, 0)} {/* Usando nutrition_info.servings */}
+              {favorites.reduce((acc, recipe) => acc + recipe.nutritionInfo.servings, 0)}
             </p>
           </Card>
         </motion.div>
