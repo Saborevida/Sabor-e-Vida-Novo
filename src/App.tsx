@@ -1,8 +1,8 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './contexts/AuthContext'; // Manter relativa ou mudar para '@/contexts/AuthContext'
-import Header from './components/layout/header'; // Manter relativa ou mudar para '@/components/layout/header'
-import Footer from './components/layout/footer'; // Manter relativa ou mudar para '@/components/layout/footer'
+import { AuthProvider, useAuth } from '@/contexts/AuthContext'; // CORREÇÃO: Usa alias @/
+import Header from '@/components/layout/header'; // CORREÇÃO: Usa alias @/ e caminho em minúsculas
+import Footer from '@/components/layout/footer'; // CORREÇÃO: Usa alias @/ e caminho em minúsculas
 
 // Importações das Páginas (Usando Alias @/ e nome em minúsculas)
 import Home from '@/pages/home'; // CORREÇÃO
@@ -10,11 +10,13 @@ import Dashboard from '@/pages/dashboard'; // CORREÇÃO
 import LoginForm from '@/components/auth/loginForm'; // CORREÇÃO
 import RegisterForm from '@/components/auth/registerForm'; // CORREÇÃO
 import RecipesPage from '@/pages/recipes'; // CORREÇÃO
-import EducationPage from '@/pages/education'; // CORREÇÃO
 import MealPlansPage from '@/pages/mealplans'; // CORREÇÃO
+import EducationPage from '@/pages/education'; // CORREÇÃO
 import FavoritesPage from '@/pages/favorites'; // CORREÇÃO
 import ProfilePage from '@/pages/profile'; // CORREÇÃO
 import ForgotPasswordForm from '@/components/auth/forgotPasswordForm'; // CORREÇÃO
+import PricingPage from '@/pages/pricing'; // CORREÇÃO: Adicionando se esta página existir
+
 
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -52,8 +54,7 @@ const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return user ? <Navigate to="/dashboard" /> : <>{children}</>;
 };
 
-// ... Resto do código do App (LoginPage, RegisterPage, RecipesPage, etc.)
-// As definições de LoginPage, RegisterPage, RecipesPage, etc. serão as importações acima.
+// As definições de LoginPage, RegisterPage, RecipesPage, etc. agora são as importações acima.
 
 function App() {
   return (
@@ -76,7 +77,7 @@ function App() {
                 path="/register" 
                 element={
                   <PublicRoute>
-                    <RegisterForm /> {/* Usa o componente importado */}
+                    <RegisterPage /> {/* Usa o componente importado */}
                   </PublicRoute>
                 } 
               />
@@ -134,6 +135,14 @@ function App() {
                   <ProtectedRoute>
                     <ProfilePage /> {/* Usa o componente importado */}
                   </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/pricing" 
+                element={
+                  <PublicRoute> {/* Pricing pode ser pública */}
+                    <PricingPage /> {/* Usa o componente importado */}
+                  </PublicRoute>
                 } 
               />
             </Routes>
