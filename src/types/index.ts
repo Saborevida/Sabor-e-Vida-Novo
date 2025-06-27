@@ -99,12 +99,3 @@ export interface Subscription {
   createdAt: Date;
   updatedAt: Date;
 }
-
-// ✅ Novo tipo exclusivo para o Glossário
-export interface GlossaryItem {
-  id?: string; // opcional, pois o conteúdo inserido via SQL não tem id explícito
-  term: string;
-  definition: string;
-  category: 'Informação sobre Diabetes' | 'Ingrediente' | 'Nutriente' | 'Dicas Nutricionais';
-  tags: string[];
-}

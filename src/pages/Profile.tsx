@@ -1,56 +1,64 @@
-// ... imports mantidos
-import { useSupabaseClient } from '@supabase/auth-helpers-react'; // adicionado
-import toast from 'react-hot-toast'; // caso use algum sistema de toast
+import React, { useState } from 'react';
+import { motion } from 'framer-motion';
+import {
+  User,
+  Mail,
+  Calendar,
+  Heart,
+  Settings,
+  Shield,
+  Bell,
+} from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import Card from '../components/ui/Card';
+import Button from '../components/ui/Button';
+import Input from '../components/ui/Input';
+import { updateUserProfile } from '../lib/supabase';
 
 const ProfilePage: React.FC = () => {
-  const supabase = useSupabaseClient(); // supabase client
-  const { userProfile, user } = useAuth();
-
+  const { userProfile, user, refreshUserProfile } = useAuth();
   const [activeTab, setActiveTab] = useState('profile');
   const [isEditing, setIsEditing] = useState(false);
 
-  // Estados locais dos campos editáveis
-  const [name, setName] = useState(userProfile?.name || '');
-  const [dateOfBirth, setDateOfBirth] = useState(
-    userProfile?.dateOfBirth
-      ? userProfile.dateOfBirth.toISOString().split('T')[0]
-      : ''
-  );
-  const [diabetesType, setDiabetesType] = useState(userProfile?.diabetesType || 'type2');
+  // Form state
+  const [formData, setFormData] = useState({
+    name: userProfile?.name || '',
+    dateOfBirth: userProfile?.dateOfBirth?.toString().substring(0, 10) || '',
+    diabetesType: userProfile?.diabetesType || 'type2',
+  });
 
-  // Salvar alterações
-  const handleSaveProfile = async () => {
-    if (!user) return;
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
 
-    const { error } = await supabase
-      .from('users')
-      .update({
-        name,
-        dateOfBirth,
-        diabetesType,
-      })
-      .eq('id', user.id);
-
-    if (error) {
-      console.error(error);
-      toast.error('Erro ao salvar perfil.');
-    } else {
-      toast.success('Perfil atualizado com sucesso!');
+  const handleSave = async () => {
+    if (!userProfile) return;
+    const { error } = await updateUserProfile(userProfile.id, {
+      ...formData,
+      dateOfBirth: new Date(formData.dateOfBirth),
+    });
+    if (!error) {
+      await refreshUserProfile();
       setIsEditing(false);
-      // opcional: forçar atualização do contexto
-      // await reloadUserProfile();
+    } else {
+      console.error('Erro ao atualizar perfil:', error.message);
     }
   };
+
+  const tabs = [
+    { id: 'profile', label: 'Perfil', icon: User },
+    { id: 'health', label: 'Saúde', icon: Heart },
+    { id: 'preferences', label: 'Preferências', icon: Settings },
+    { id: 'notifications', label: 'Notificações', icon: Bell },
+    { id: 'privacy', label: 'Privacidade', icon: Shield },
+  ];
 
   const renderProfileTab = () => (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold text-dark-800">Informações Pessoais</h3>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setIsEditing(!isEditing)}
-        >
+        <Button variant="outline" size="sm" onClick={() => setIsEditing(!isEditing)}>
           {isEditing ? 'Cancelar' : 'Editar'}
         </Button>
       </div>
@@ -59,8 +67,9 @@ const ProfilePage: React.FC = () => {
         <Input
           label="Nome completo"
           type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
+          name="name"
+          value={formData.name}
+          onChange={handleChange}
           disabled={!isEditing}
           placeholder="Seu nome completo"
         />
@@ -69,15 +78,16 @@ const ProfilePage: React.FC = () => {
           label="Email"
           type="email"
           value={user?.email || ''}
-          disabled={true}
+          disabled
           icon={Mail}
         />
 
         <Input
           label="Data de nascimento"
           type="date"
-          value={dateOfBirth}
-          onChange={(e) => setDateOfBirth(e.target.value)}
+          name="dateOfBirth"
+          value={formData.dateOfBirth}
+          onChange={handleChange}
           disabled={!isEditing}
           icon={Calendar}
         />
@@ -87,10 +97,11 @@ const ProfilePage: React.FC = () => {
             Tipo de diabetes
           </label>
           <select
+            name="diabetesType"
+            value={formData.diabetesType}
+            onChange={handleChange}
             disabled={!isEditing}
-            value={diabetesType}
-            onChange={(e) => setDiabetesType(e.target.value)}
-            className="block w-full px-3 py-2.5 text-base border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:bg-neutral-50"
+            className="block w-full px-3 py-2.5 text-base border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:bg-neutral-50"
           >
             <option value="type1">Tipo 1</option>
             <option value="type2">Tipo 2</option>
@@ -102,7 +113,7 @@ const ProfilePage: React.FC = () => {
 
       {isEditing && (
         <div className="flex space-x-4">
-          <Button variant="primary" onClick={handleSaveProfile}>
+          <Button variant="primary" onClick={handleSave}>
             Salvar Alterações
           </Button>
           <Button variant="outline" onClick={() => setIsEditing(false)}>
@@ -113,7 +124,62 @@ const ProfilePage: React.FC = () => {
     </div>
   );
 
-  // ... restante do código permanece igual (demais tabs, layout, etc.)
+  // Os outros tabs podem permanecer como estão por enquanto, ou podemos integrá-los com updateUserProfile quando necessário.
+
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case 'profile': return renderProfileTab();
+      // outros tabs permanecem inalterados por ora
+      default: return renderProfileTab();
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-neutral-50 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-8">
+          <div className="flex items-center justify-center mb-4">
+            <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mr-4">
+              <User className="w-8 h-8 text-primary-600" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-heading font-bold text-dark-800">
+                {userProfile?.name || 'Usuário'}
+              </h1>
+              <p className="text-neutral-600">{user?.email}</p>
+            </div>
+          </div>
+        </motion.div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }} className="lg:col-span-1">
+            <Card>
+              <nav className="space-y-2">
+                {tabs.map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`w-full flex items-center px-3 py-2 text-left rounded-lg transition-colors duration-200 ${
+                      activeTab === tab.id
+                        ? 'bg-primary-100 text-primary-700'
+                        : 'text-neutral-600 hover:bg-neutral-100'
+                    }`}
+                  >
+                    <tab.icon size={20} className="mr-3" />
+                    {tab.label}
+                  </button>
+                ))}
+              </nav>
+            </Card>
+          </motion.div>
+
+          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }} className="lg:col-span-3">
+            <Card>{renderTabContent()}</Card>
+          </motion.div>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export default ProfilePage;
