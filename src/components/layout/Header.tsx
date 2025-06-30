@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Heart, Menu, User, LogOut, Settings } from 'lucide-react';
+import { Heart, Menu, User, LogOut, Settings, BookOpen, Apple } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import Button from '../ui/Button';
 
@@ -16,6 +16,11 @@ const Header: React.FC = () => {
     { name: 'Planos', href: '/meal-plans' },
     { name: 'Educação', href: '/education' },
     { name: 'Favoritos', href: '/favorites' },
+  ];
+
+  const publicNavigation = [
+    { name: 'Glossário', href: '/glossary', icon: BookOpen },
+    { name: 'Tabela Nutricional', href: '/nutrition-table', icon: Apple },
   ];
 
   const isActive = (path: string) => location.pathname === path;
@@ -41,7 +46,24 @@ const Header: React.FC = () => {
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex space-x-8">
-            {navigation.map((item) => (
+            {/* Public Navigation */}
+            {publicNavigation.map((item) => (
+              <Link
+                key={item.name}
+                to={item.href}
+                className={`px-3 py-2 text-sm font-medium transition-colors duration-200 flex items-center space-x-1 ${
+                  isActive(item.href)
+                    ? 'text-primary-600 border-b-2 border-primary-600'
+                    : 'text-neutral-600 hover:text-primary-600'
+                }`}
+              >
+                <item.icon size={16} />
+                <span>{item.name}</span>
+              </Link>
+            ))}
+            
+            {/* Protected Navigation */}
+            {user && navigation.map((item) => (
               <Link
                 key={item.name}
                 to={item.href}
@@ -129,7 +151,25 @@ const Header: React.FC = () => {
             className="md:hidden border-t border-neutral-200 py-4"
           >
             <nav className="space-y-2">
-              {navigation.map((item) => (
+              {/* Public Navigation */}
+              {publicNavigation.map((item) => (
+                <Link
+                  key={item.name}
+                  to={item.href}
+                  className={`flex items-center space-x-2 px-3 py-2 text-base font-medium rounded-lg ${
+                    isActive(item.href)
+                      ? 'bg-primary-50 text-primary-700'
+                      : 'text-neutral-600 hover:bg-neutral-50 hover:text-primary-600'
+                  }`}
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  <item.icon size={20} />
+                  <span>{item.name}</span>
+                </Link>
+              ))}
+              
+              {/* Protected Navigation */}
+              {user && navigation.map((item) => (
                 <Link
                   key={item.name}
                   to={item.href}

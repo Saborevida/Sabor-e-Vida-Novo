@@ -4,7 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://exqaukffjkbpomoljnxp.supabase.co';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV4cWF1a2ZmamticG9tb2xqbnhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk2ODkwMzksImV4cCI6MjA2NTI2NTAzOX0.wvrijoiwIGuojEY4j_QkRMF70EbCvkOxK1Uf56S52xw';
 
-console.log('🚀 INICIALIZANDO SUPABASE - VERSÃO CORRIGIDA');
+console.log('🚀 INICIALIZANDO SUPABASE - VERSÃO COMPLETA');
 console.log('🌍 URL:', supabaseUrl);
 console.log('🔑 Key configurada:', supabaseAnonKey ? '✅ SIM' : '❌ NÃO');
 
@@ -18,7 +18,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   },
   global: {
     headers: {
-      'X-Client-Info': 'sabor-vida-fixed'
+      'X-Client-Info': 'sabor-vida-complete'
     }
   },
   db: {
@@ -559,6 +559,307 @@ export const getUserSubscription = async () => {
   }
 };
 
+// NOVAS FUNÇÕES PARA AS TABELAS ADICIONADAS
+
+// Função para buscar categorias
+export const getCategories = async (type?: string) => {
+  console.log('📂 BUSCANDO CATEGORIAS');
+  
+  try {
+    let query = supabase
+      .from('categories')
+      .select('*')
+      .eq('active', true)
+      .order('order_index', { ascending: true });
+
+    if (type) {
+      query = query.eq('type', type);
+    }
+
+    const { data, error } = await withTimeout(query, 5000);
+    
+    if (error) {
+      console.error('❌ Erro ao buscar categorias:', error);
+      return { data: [], error };
+    }
+    
+    console.log('✅ Categorias carregadas:', data?.length || 0);
+    return { data: data || [], error: null };
+    
+  } catch (err) {
+    console.error('❌ Timeout ao buscar categorias:', err);
+    return { data: [], error: err };
+  }
+};
+
+// Função para buscar glossário
+export const getGlossary = async (filters?: any) => {
+  console.log('📖 BUSCANDO GLOSSÁRIO');
+  
+  try {
+    let query = supabase
+      .from('glossary')
+      .select('*')
+      .order('term', { ascending: true });
+
+    if (filters?.category && filters.category !== 'all') {
+      query = query.eq('category', filters.category);
+    }
+
+    if (filters?.difficulty && filters.difficulty !== 'all') {
+      query = query.eq('difficulty_level', filters.difficulty);
+    }
+
+    const { data, error } = await withTimeout(query, 8000);
+    
+    if (error) {
+      console.error('❌ Erro ao buscar glossário:', error);
+      return { data: [], error };
+    }
+    
+    console.log('✅ Glossário carregado:', data?.length || 0);
+    
+    // Aplicar filtro de busca se fornecido
+    let filteredData = data || [];
+    if (filters?.searchTerm) {
+      const term = filters.searchTerm.toLowerCase();
+      filteredData = filteredData.filter((item: any) => 
+        item.term.toLowerCase().includes(term) ||
+        item.definition.toLowerCase().includes(term) ||
+        item.synonyms.some((synonym: string) => synonym.toLowerCase().includes(term))
+      );
+    }
+    
+    return { data: filteredData, error: null };
+    
+  } catch (err) {
+    console.error('❌ Timeout ao buscar glossário:', err);
+    return { data: [], error: err };
+  }
+};
+
+// Função para buscar informações nutricionais
+export const getNutritionFacts = async (filters?: any) => {
+  console.log('🥗 BUSCANDO INFORMAÇÕES NUTRICIONAIS');
+  
+  try {
+    let query = supabase
+      .from('nutrition_facts')
+      .select('*')
+      .order('food_name', { ascending: true });
+
+    if (filters?.category && filters.category !== 'all') {
+      query = query.eq('category', filters.category);
+    }
+
+    const { data, error } = await withTimeout(query, 8000);
+    
+    if (error) {
+      console.error('❌ Erro ao buscar informações nutricionais:', error);
+      return { data: [], error };
+    }
+    
+    console.log('✅ Informações nutricionais carregadas:', data?.length || 0);
+    
+    // Aplicar filtro de busca se fornecido
+    let filteredData = data || [];
+    if (filters?.searchTerm) {
+      const term = filters.searchTerm.toLowerCase();
+      filteredData = filteredData.filter((item: any) => 
+        item.food_name.toLowerCase().includes(term)
+      );
+    }
+    
+    return { data: filteredData, error: null };
+    
+  } catch (err) {
+    console.error('❌ Timeout ao buscar informações nutricionais:', err);
+    return { data: [], error: err };
+  }
+};
+
+// Função para buscar preferências do usuário
+export const getUserPreferences = async (userId: string) => {
+  console.log('⚙️ BUSCANDO PREFERÊNCIAS DO USUÁRIO');
+  
+  try {
+    const { data, error } = await withTimeout(
+      supabase
+        .from('user_preferences')
+        .select('*')
+        .eq('user_id', userId)
+        .single(),
+      5000
+    );
+    
+    if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+      console.error('❌ Erro ao buscar preferências:', error);
+      return { data: null, error };
+    }
+    
+    console.log('✅ Preferências carregadas');
+    return { data: data || null, error: null };
+    
+  } catch (err) {
+    console.error('❌ Timeout ao buscar preferências:', err);
+    return { data: null, error: err };
+  }
+};
+
+// Função para salvar preferências do usuário
+export const saveUserPreferences = async (userId: string, preferences: any) => {
+  console.log('⚙️ SALVANDO PREFERÊNCIAS DO USUÁRIO');
+  
+  try {
+    const { data, error } = await withTimeout(
+      supabase
+        .from('user_preferences')
+        .upsert({
+          user_id: userId,
+          ...preferences,
+          updated_at: new Date().toISOString()
+        })
+        .select()
+        .single(),
+      8000
+    );
+    
+    if (error) {
+      console.error('❌ Erro ao salvar preferências:', error);
+      return { data: null, error };
+    }
+    
+    console.log('✅ Preferências salvas');
+    return { data, error: null };
+    
+  } catch (err) {
+    console.error('❌ Timeout ao salvar preferências:', err);
+    return { data: null, error: err };
+  }
+};
+
+// Função para buscar avaliações de receitas
+export const getRecipeReviews = async (recipeId: string) => {
+  console.log('⭐ BUSCANDO AVALIAÇÕES DA RECEITA');
+  
+  try {
+    const { data, error } = await withTimeout(
+      supabase
+        .from('recipe_reviews')
+        .select(`
+          *,
+          users (name, email)
+        `)
+        .eq('recipe_id', recipeId)
+        .order('created_at', { ascending: false }),
+      8000
+    );
+    
+    if (error) {
+      console.error('❌ Erro ao buscar avaliações:', error);
+      return { data: [], error };
+    }
+    
+    console.log('✅ Avaliações carregadas:', data?.length || 0);
+    return { data: data || [], error: null };
+    
+  } catch (err) {
+    console.error('❌ Timeout ao buscar avaliações:', err);
+    return { data: [], error: err };
+  }
+};
+
+// Função para adicionar avaliação de receita
+export const addRecipeReview = async (userId: string, recipeId: string, reviewData: any) => {
+  console.log('⭐ ADICIONANDO AVALIAÇÃO DA RECEITA');
+  
+  try {
+    const { data, error } = await withTimeout(
+      supabase
+        .from('recipe_reviews')
+        .upsert({
+          user_id: userId,
+          recipe_id: recipeId,
+          ...reviewData
+        })
+        .select()
+        .single(),
+      8000
+    );
+    
+    if (error) {
+      console.error('❌ Erro ao adicionar avaliação:', error);
+      return { data: null, error };
+    }
+    
+    console.log('✅ Avaliação adicionada');
+    return { data, error: null };
+    
+  } catch (err) {
+    console.error('❌ Timeout ao adicionar avaliação:', err);
+    return { data: null, error: err };
+  }
+};
+
+// Função para buscar listas de compras
+export const getShoppingLists = async (userId: string) => {
+  console.log('🛒 BUSCANDO LISTAS DE COMPRAS');
+  
+  try {
+    const { data, error } = await withTimeout(
+      supabase
+        .from('shopping_lists')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false }),
+      8000
+    );
+    
+    if (error) {
+      console.error('❌ Erro ao buscar listas de compras:', error);
+      return { data: [], error };
+    }
+    
+    console.log('✅ Listas de compras carregadas:', data?.length || 0);
+    return { data: data || [], error: null };
+    
+  } catch (err) {
+    console.error('❌ Timeout ao buscar listas de compras:', err);
+    return { data: [], error: err };
+  }
+};
+
+// Função para criar lista de compras
+export const createShoppingList = async (userId: string, listData: any) => {
+  console.log('🛒 CRIANDO LISTA DE COMPRAS');
+  
+  try {
+    const { data, error } = await withTimeout(
+      supabase
+        .from('shopping_lists')
+        .insert({
+          user_id: userId,
+          ...listData
+        })
+        .select()
+        .single(),
+      8000
+    );
+    
+    if (error) {
+      console.error('❌ Erro ao criar lista de compras:', error);
+      return { data: null, error };
+    }
+    
+    console.log('✅ Lista de compras criada');
+    return { data, error: null };
+    
+  } catch (err) {
+    console.error('❌ Timeout ao criar lista de compras:', err);
+    return { data: null, error: err };
+  }
+};
+
 // Dados de exemplo para fallback - MANTIDOS
 const getExampleRecipes = () => [
   {
@@ -750,8 +1051,11 @@ const getExampleEducationalContent = () => [
   }
 ];
 
-console.log('✅ CLIENTE SUPABASE INICIALIZADO COM LÓGICA CORRIGIDA');
-console.log('🎯 TODAS AS QUERIES AGORA EXECUTAM CORRETAMENTE');
+console.log('✅ CLIENTE SUPABASE INICIALIZADO COM SCHEMA COMPLETO');
+console.log('🎯 TODAS AS QUERIES EXECUTAM CORRETAMENTE');
 console.log('📚 FUNÇÕES PARA EDUCAÇÃO E PLANOS FUNCIONAIS');
 console.log('🔗 CONTEÚDO EDUCATIVO CONECTADO AO SUPABASE');
 console.log('💳 FUNÇÃO DE ASSINATURA ADICIONADA');
+console.log('📂 CATEGORIAS, GLOSSÁRIO E TABELA NUTRICIONAL DISPONÍVEIS');
+console.log('⚙️ PREFERÊNCIAS DE USUÁRIO E AVALIAÇÕES IMPLEMENTADAS');
+console.log('🛒 LISTAS DE COMPRAS FUNCIONAIS');

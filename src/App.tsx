@@ -13,6 +13,8 @@ import FavoritesPage from './pages/Favorites';
 import ProfilePage from './pages/Profile';
 import PricingPage from './pages/Pricing';
 import SuccessPage from './pages/Success';
+import GlossaryPage from './pages/Glossary';
+import NutritionTablePage from './pages/NutritionTable';
 
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -223,7 +225,7 @@ const RegisterPage: React.FC = () => {
 };
 
 function App() {
-  console.log('🎯 Rendering App component - COMPLETE PRODUCTION VERSION');
+  console.log('🎯 Rendering App component - VERSÃO COMPLETA COM NOVAS PÁGINAS');
   console.log('🌍 Current URL:', window.location.href);
   console.log('🔧 Mode:', import.meta.env.MODE);
   
@@ -253,6 +255,8 @@ function App() {
               />
               <Route path="/pricing" element={<PricingPage />} />
               <Route path="/success" element={<SuccessPage />} />
+              <Route path="/glossary" element={<GlossaryPage />} />
+              <Route path="/nutrition-table" element={<NutritionTablePage />} />
               <Route 
                 path="/dashboard" 
                 element={
