@@ -20,7 +20,6 @@ const ProfilePage: React.FC = () => {
   const [activeTab, setActiveTab] = useState('profile');
   const [isEditing, setIsEditing] = useState(false);
 
-  // Form state
   const [formData, setFormData] = useState({
     name: userProfile?.name || '',
     dateOfBirth: userProfile?.dateOfBirth?.toString().substring(0, 10) || '',
@@ -34,15 +33,17 @@ const ProfilePage: React.FC = () => {
 
   const handleSave = async () => {
     if (!userProfile) return;
+
     const { error } = await updateUserProfile(userProfile.id, {
       ...formData,
       dateOfBirth: new Date(formData.dateOfBirth),
     });
+
     if (!error) {
       await refreshUserProfile();
       setIsEditing(false);
     } else {
-      console.error('Erro ao atualizar perfil:', error.message);
+      console.error('Erro ao atualizar perfil:', error?.message || error);
     }
   };
 
@@ -124,12 +125,9 @@ const ProfilePage: React.FC = () => {
     </div>
   );
 
-  // Os outros tabs podem permanecer como estão por enquanto, ou podemos integrá-los com updateUserProfile quando necessário.
-
   const renderTabContent = () => {
     switch (activeTab) {
       case 'profile': return renderProfileTab();
-      // outros tabs permanecem inalterados por ora
       default: return renderProfileTab();
     }
   };
