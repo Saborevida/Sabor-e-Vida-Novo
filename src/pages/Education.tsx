@@ -1,13 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { BookOpen, Search, Filter, Clock, Star, Users, TrendingUp } from 'lucide-react';
+import { getEducationalContent, incrementArticleViews } from '../lib/supabase';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 
 const EducationPage: React.FC = () => {
+  const [articles, setArticles] = useState<any[]>([]);
+  const [filteredArticles, setFilteredArticles] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [dataSource, setDataSource] = useState<'supabase' | 'example'>('supabase');
 
   const categories = [
     { value: 'all', label: 'Todos os Tópicos' },
@@ -18,90 +23,84 @@ const EducationPage: React.FC = () => {
     { value: 'supplements', label: 'Suplementos' },
   ];
 
-  const articles = [
-    {
-      id: '1',
-      title: 'Índice Glicêmico: O que é e como usar na sua alimentação',
-      excerpt: 'Entenda como o índice glicêmico dos alimentos afeta seus níveis de açúcar no sangue e aprenda a fazer escolhas mais inteligentes.',
-      category: 'diabetes',
-      readTime: 8,
-      difficulty: 'Iniciante',
-      rating: 4.8,
-      views: 1250,
-      image: 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
-      tags: ['índice glicêmico', 'controle glicêmico', 'alimentação']
-    },
-    {
-      id: '2',
-      title: 'Carboidratos Complexos vs Simples: Qual a diferença?',
-      excerpt: 'Descubra as diferenças entre carboidratos complexos e simples e como cada tipo afeta seu organismo.',
-      category: 'nutrition',
-      readTime: 6,
-      difficulty: 'Iniciante',
-      rating: 4.9,
-      views: 980,
-      image: 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
-      tags: ['carboidratos', 'nutrição', 'metabolismo']
-    },
-    {
-      id: '3',
-      title: 'Técnicas de Cocção que Preservam Nutrientes',
-      excerpt: 'Aprenda métodos de preparo que mantêm os nutrientes dos alimentos e potencializam seus benefícios.',
-      category: 'recipes',
-      readTime: 10,
-      difficulty: 'Intermediário',
-      rating: 4.7,
-      views: 750,
-      image: 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
-      tags: ['cocção', 'nutrientes', 'técnicas culinárias']
-    },
-    {
-      id: '4',
-      title: 'Exercícios e Alimentação: A combinação perfeita',
-      excerpt: 'Como sincronizar sua alimentação com exercícios físicos para otimizar o controle da diabetes.',
-      category: 'lifestyle',
-      readTime: 12,
-      difficulty: 'Intermediário',
-      rating: 4.6,
-      views: 1100,
-      image: 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
-      tags: ['exercícios', 'alimentação', 'diabetes']
-    },
-    {
-      id: '5',
-      title: 'Suplementos Naturais para Diabéticos',
-      excerpt: 'Conheça suplementos naturais que podem auxiliar no controle glicêmico e melhorar sua qualidade de vida.',
-      category: 'supplements',
-      readTime: 15,
-      difficulty: 'Avançado',
-      rating: 4.5,
-      views: 650,
-      image: 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
-      tags: ['suplementos', 'natural', 'controle glicêmico']
-    },
-    {
-      id: '6',
-      title: 'Planejamento de Refeições: Estratégias Práticas',
-      excerpt: 'Dicas essenciais para planejar suas refeições da semana de forma eficiente e saudável.',
-      category: 'nutrition',
-      readTime: 9,
-      difficulty: 'Iniciante',
-      rating: 4.8,
-      views: 1350,
-      image: 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
-      tags: ['planejamento', 'refeições', 'organização']
-    }
-  ];
+  useEffect(() => {
+    console.log('📚 Carregando página de educação com timeout');
+    fetchEducationalContent();
+  }, []);
 
-  const filteredArticles = articles.filter(article => {
-    const matchesSearch = article.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         article.excerpt.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         article.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
+  useEffect(() => {
+    filterArticles();
+  }, [articles, searchTerm, selectedCategory]);
+
+  const fetchEducationalContent = async () => {
+    // Timeout para carregamento
+    const loadingTimeout = setTimeout(() => {
+      if (loading) {
+        console.log('⏰ Timeout no carregamento de conteúdo educativo');
+        setLoading(false);
+        setDataSource('example');
+      }
+    }, 10000); // 10 segundos máximo
+
+    try {
+      console.log('📥 Buscando conteúdo educativo do Supabase...');
+      const { data, error } = await getEducationalContent();
+      
+      clearTimeout(loadingTimeout);
+      
+      if (data && data.length > 0) {
+        console.log('✅ Conteúdo educativo carregado:', data.length);
+        
+        // Verificar se são dados reais ou de exemplo
+        const isExample = data.some(article => article.id?.length < 10);
+        setDataSource(isExample ? 'example' : 'supabase');
+        
+        setArticles(data);
+      } else {
+        console.log('ℹ️ Nenhum conteúdo encontrado');
+        setArticles([]);
+        setDataSource('example');
+      }
+    } catch (error) {
+      console.error('❌ Erro ao carregar conteúdo educativo:', error);
+      clearTimeout(loadingTimeout);
+      setArticles([]);
+      setDataSource('example');
+    } finally {
+      clearTimeout(loadingTimeout);
+      setLoading(false);
+    }
+  };
+
+  const filterArticles = () => {
+    let filtered = articles;
+
+    // Filter by search term
+    if (searchTerm) {
+      filtered = filtered.filter(article =>
+        article.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        article.excerpt.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        article.tags.some((tag: string) => tag.toLowerCase().includes(searchTerm.toLowerCase()))
+      );
+    }
+
+    // Filter by category
+    if (selectedCategory !== 'all') {
+      filtered = filtered.filter(article => article.category === selectedCategory);
+    }
+
+    setFilteredArticles(filtered);
+  };
+
+  const handleArticleClick = async (article: any) => {
+    // Incrementar visualizações se for do Supabase
+    if (dataSource === 'supabase' && article.id) {
+      await incrementArticleViews(article.id);
+    }
     
-    const matchesCategory = selectedCategory === 'all' || article.category === selectedCategory;
-    
-    return matchesSearch && matchesCategory;
-  });
+    // Aqui você pode implementar a navegação para a página do artigo
+    console.log('📖 Abrindo artigo:', article.title);
+  };
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
@@ -123,6 +122,18 @@ const EducationPage: React.FC = () => {
     return categoryMap[category as keyof typeof categoryMap] || category;
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-neutral-600">Carregando conteúdo educativo...</p>
+          <p className="text-sm text-neutral-500 mt-2">Máximo 10 segundos</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-neutral-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -139,6 +150,19 @@ const EducationPage: React.FC = () => {
             Aprenda sobre nutrição, diabetes e alimentação saudável com conteúdo 
             científico e prático desenvolvido por especialistas.
           </p>
+          
+          {/* Status de conexão */}
+          <div className={`mt-4 p-3 border rounded-lg text-sm max-w-md mx-auto ${
+            dataSource === 'supabase' 
+              ? 'bg-green-50 border-green-200 text-green-800' 
+              : 'bg-blue-50 border-blue-200 text-blue-800'
+          }`}>
+            <p>
+              <strong>
+                {dataSource === 'supabase' ? '✅ Conectado ao Supabase' : '📝 Conteúdo de Exemplo'}:
+              </strong> {articles.length} artigos disponíveis
+            </p>
+          </div>
         </motion.div>
 
         {/* Stats */}
@@ -160,8 +184,10 @@ const EducationPage: React.FC = () => {
             <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-3">
               <Users className="w-6 h-6 text-blue-600" />
             </div>
-            <h3 className="font-semibold text-dark-800">Leitores</h3>
-            <p className="text-2xl font-bold text-blue-600">5.2k</p>
+            <h3 className="font-semibold text-dark-800">Visualizações</h3>
+            <p className="text-2xl font-bold text-blue-600">
+              {articles.reduce((total, article) => total + (article.views || 0), 0)}
+            </p>
           </Card>
 
           <Card className="text-center">
@@ -169,15 +195,20 @@ const EducationPage: React.FC = () => {
               <Star className="w-6 h-6 text-green-600" />
             </div>
             <h3 className="font-semibold text-dark-800">Avaliação</h3>
-            <p className="text-2xl font-bold text-green-600">4.7</p>
+            <p className="text-2xl font-bold text-green-600">
+              {articles.length > 0 
+                ? (articles.reduce((total, article) => total + (article.rating || 0), 0) / articles.length).toFixed(1)
+                : '0.0'
+              }
+            </p>
           </Card>
 
           <Card className="text-center">
             <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center mx-auto mb-3">
               <TrendingUp className="w-6 h-6 text-yellow-600" />
             </div>
-            <h3 className="font-semibold text-dark-800">Crescimento</h3>
-            <p className="text-2xl font-bold text-yellow-600">+23%</p>
+            <h3 className="font-semibold text-dark-800">Categorias</h3>
+            <p className="text-2xl font-bold text-yellow-600">{categories.length - 1}</p>
           </Card>
         </motion.div>
 
@@ -232,7 +263,9 @@ const EducationPage: React.FC = () => {
             </p>
             <div className="flex items-center space-x-2 text-sm text-neutral-500">
               <Filter size={16} />
-              <span>Filtros ativos</span>
+              <span>
+                {dataSource === 'supabase' ? 'Dados do Supabase' : 'Conteúdo de exemplo'}
+              </span>
             </div>
           </div>
         </motion.div>
@@ -252,7 +285,7 @@ const EducationPage: React.FC = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 * index }}
               >
-                <Card hover className="h-full">
+                <Card hover className="h-full cursor-pointer" onClick={() => handleArticleClick(article)}>
                   <img
                     src={article.image}
                     alt={article.title}
@@ -294,7 +327,7 @@ const EducationPage: React.FC = () => {
                   </div>
 
                   <div className="flex flex-wrap gap-1 mb-4">
-                    {article.tags.slice(0, 3).map((tag, tagIndex) => (
+                    {article.tags.slice(0, 3).map((tag: string, tagIndex: number) => (
                       <span
                         key={tagIndex}
                         className="px-2 py-1 bg-neutral-100 text-neutral-600 text-xs rounded-full"
@@ -320,20 +353,25 @@ const EducationPage: React.FC = () => {
             <Card className="text-center py-12">
               <BookOpen className="w-16 h-16 text-neutral-300 mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-dark-800 mb-2">
-                Nenhum artigo encontrado
+                {articles.length === 0 ? 'Nenhum conteúdo disponível' : 'Nenhum artigo encontrado'}
               </h3>
               <p className="text-neutral-600 mb-6">
-                Tente ajustar os filtros para encontrar mais conteúdo.
+                {articles.length === 0 
+                  ? 'Execute a migração do banco de dados para adicionar conteúdo educativo.'
+                  : 'Tente ajustar os filtros para encontrar mais conteúdo.'
+                }
               </p>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setSearchTerm('');
-                  setSelectedCategory('all');
-                }}
-              >
-                Limpar Filtros
-              </Button>
+              {articles.length > 0 && (
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setSearchTerm('');
+                    setSelectedCategory('all');
+                  }}
+                >
+                  Limpar Filtros
+                </Button>
+              )}
             </Card>
           </motion.div>
         )}

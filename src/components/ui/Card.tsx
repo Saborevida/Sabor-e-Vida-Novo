@@ -6,6 +6,7 @@ interface CardProps {
   className?: string;
   hover?: boolean;
   padding?: 'none' | 'sm' | 'md' | 'lg';
+  onClick?: () => void;
 }
 
 const Card: React.FC<CardProps> = ({
@@ -13,6 +14,7 @@ const Card: React.FC<CardProps> = ({
   className = '',
   hover = false,
   padding = 'md',
+  onClick,
 }) => {
   const paddingClasses = {
     none: '',
@@ -21,7 +23,7 @@ const Card: React.FC<CardProps> = ({
     lg: 'p-8',
   };
 
-  const baseClasses = `bg-white rounded-xl shadow-sm border border-neutral-200 ${paddingClasses[padding]} ${className}`;
+  const baseClasses = `bg-white rounded-xl shadow-sm border border-neutral-200 ${paddingClasses[padding]} ${className} ${onClick ? 'cursor-pointer' : ''}`;
 
   const Component = hover ? motion.div : 'div';
   const motionProps = hover ? {
@@ -30,7 +32,7 @@ const Card: React.FC<CardProps> = ({
   } : {};
 
   return (
-    <Component className={baseClasses} {...motionProps}>
+    <Component className={baseClasses} onClick={onClick} {...motionProps}>
       {children}
     </Component>
   );

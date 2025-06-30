@@ -16,6 +16,7 @@ const RecipesPage: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedDifficulty, setSelectedDifficulty] = useState('all');
   const [maxPrepTime, setMaxPrepTime] = useState(120);
+  const [dataSource, setDataSource] = useState<'supabase' | 'example'>('supabase');
 
   const categories = [
     { value: 'all', label: 'Todas as Categorias' },
@@ -35,7 +36,7 @@ const RecipesPage: React.FC = () => {
   ];
 
   useEffect(() => {
-    console.log('🍽️ Carregando página de receitas');
+    console.log('🍽️ Carregando página de receitas com timeout');
     fetchRecipes();
   }, []);
 
@@ -44,21 +45,66 @@ const RecipesPage: React.FC = () => {
   }, [recipes, searchTerm, selectedCategory, selectedDifficulty, maxPrepTime]);
 
   const fetchRecipes = async () => {
+    // Timeout para carregamento
+    const loadingTimeout = setTimeout(() => {
+      if (loading) {
+        console.log('⏰ Timeout no carregamento de receitas');
+        setLoading(false);
+        setDataSource('example');
+      }
+    }, 10000); // 10 segundos máximo
+
     try {
-      console.log('📥 Buscando receitas...');
+      console.log('📥 Buscando receitas com timeout...');
       const { data, error } = await getRecipes();
       
-      if (data && !error) {
+      clearTimeout(loadingTimeout);
+      
+      if (data && data.length > 0) {
         console.log('✅ Receitas carregadas:', data.length);
-        setRecipes(data);
+        
+        // Verificar se são dados reais ou de exemplo
+        const isExample = data.some(recipe => recipe.id?.startsWith('example-'));
+        setDataSource(isExample ? 'example' : 'supabase');
+        
+        // Converter dados para o formato esperado
+        const formattedRecipes: Recipe[] = data.map(recipe => ({
+          id: recipe.id,
+          name: recipe.name,
+          category: recipe.category,
+          ingredients: recipe.ingredients || [],
+          instructions: recipe.instructions || [],
+          nutritionInfo: recipe.nutrition_info || {
+            calories: 0,
+            carbohydrates: 0,
+            protein: 0,
+            fat: 0,
+            fiber: 0,
+            sugar: 0,
+            glycemicIndex: 0,
+            servings: 1
+          },
+          prepTime: recipe.prep_time || 0,
+          difficulty: recipe.difficulty || 'easy',
+          tags: recipe.tags || [],
+          imageUrl: recipe.image_url || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
+          createdAt: new Date(recipe.created_at),
+          updatedAt: new Date(recipe.updated_at)
+        }));
+        
+        setRecipes(formattedRecipes);
       } else {
-        console.log('⚠️ Usando receitas de exemplo');
-        setRecipes(getExampleRecipes());
+        console.log('ℹ️ Nenhuma receita encontrada');
+        setRecipes([]);
+        setDataSource('example');
       }
     } catch (error) {
       console.error('❌ Erro ao carregar receitas:', error);
-      setRecipes(getExampleRecipes());
+      clearTimeout(loadingTimeout);
+      setRecipes([]);
+      setDataSource('example');
     } finally {
+      clearTimeout(loadingTimeout);
       setLoading(false);
     }
   };
@@ -90,241 +136,13 @@ const RecipesPage: React.FC = () => {
     setFilteredRecipes(filtered);
   };
 
-  const getExampleRecipes = (): Recipe[] => [
-    {
-      id: '1',
-      name: 'Salada de Quinoa com Vegetais Grelhados',
-      category: 'lunch',
-      ingredients: [
-        { name: 'Quinoa', amount: 1, unit: 'xícara' },
-        { name: 'Abobrinha', amount: 1, unit: 'unidade' },
-        { name: 'Berinjela', amount: 1, unit: 'unidade' },
-        { name: 'Tomate cereja', amount: 200, unit: 'g' },
-        { name: 'Azeite extra virgem', amount: 2, unit: 'colheres de sopa' },
-        { name: 'Limão', amount: 1, unit: 'unidade' },
-        { name: 'Manjericão fresco', amount: 10, unit: 'folhas' }
-      ],
-      instructions: [
-        'Cozinhe a quinoa conforme instruções da embalagem',
-        'Corte os vegetais em fatias e grelhe por 5-7 minutos',
-        'Misture a quinoa com os vegetais grelhados',
-        'Tempere com azeite, limão e manjericão',
-        'Sirva morno ou frio'
-      ],
-      nutritionInfo: {
-        calories: 320,
-        carbohydrates: 45,
-        protein: 12,
-        fat: 8,
-        fiber: 6,
-        sugar: 8,
-        glycemicIndex: 35,
-        servings: 2
-      },
-      prepTime: 25,
-      difficulty: 'easy',
-      tags: ['vegetariano', 'sem-gluten', 'baixo-ig', 'rico-em-fibras'],
-      imageUrl: 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
-      createdAt: new Date(),
-      updatedAt: new Date()
-    },
-    {
-      id: '2',
-      name: 'Salmão Grelhado com Brócolis no Vapor',
-      category: 'dinner',
-      ingredients: [
-        { name: 'Filé de salmão', amount: 150, unit: 'g' },
-        { name: 'Brócolis', amount: 200, unit: 'g' },
-        { name: 'Azeite', amount: 1, unit: 'colher de sopa' },
-        { name: 'Limão', amount: 0.5, unit: 'unidade' },
-        { name: 'Alho', amount: 2, unit: 'dentes' },
-        { name: 'Sal marinho', amount: 1, unit: 'pitada' },
-        { name: 'Pimenta-do-reino', amount: 1, unit: 'pitada' }
-      ],
-      instructions: [
-        'Tempere o salmão com sal, pimenta e limão',
-        'Aqueça uma frigideira antiaderente',
-        'Grelhe o salmão por 4 minutos de cada lado',
-        'Cozinhe o brócolis no vapor por 5 minutos',
-        'Refogue o alho no azeite e misture com o brócolis',
-        'Sirva o salmão com o brócolis'
-      ],
-      nutritionInfo: {
-        calories: 280,
-        carbohydrates: 12,
-        protein: 35,
-        fat: 15,
-        fiber: 4,
-        sugar: 3,
-        glycemicIndex: 15,
-        servings: 1
-      },
-      prepTime: 20,
-      difficulty: 'medium',
-      tags: ['rico-em-proteina', 'omega-3', 'baixo-carb', 'anti-inflamatorio'],
-      imageUrl: 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
-      createdAt: new Date(),
-      updatedAt: new Date()
-    },
-    {
-      id: '3',
-      name: 'Smoothie Verde Detox',
-      category: 'beverage',
-      ingredients: [
-        { name: 'Espinafre baby', amount: 50, unit: 'g' },
-        { name: 'Pepino', amount: 0.5, unit: 'unidade' },
-        { name: 'Maçã verde', amount: 1, unit: 'unidade' },
-        { name: 'Gengibre fresco', amount: 1, unit: 'cm' },
-        { name: 'Água de coco', amount: 200, unit: 'ml' },
-        { name: 'Limão', amount: 0.5, unit: 'unidade' },
-        { name: 'Hortelã', amount: 5, unit: 'folhas' }
-      ],
-      instructions: [
-        'Lave bem todos os ingredientes',
-        'Descasque o gengibre e corte em pedaços pequenos',
-        'Corte a maçã em pedaços (sem casca se preferir)',
-        'Bata todos os ingredientes no liquidificador',
-        'Coe se desejar uma textura mais lisa',
-        'Sirva imediatamente com gelo'
-      ],
-      nutritionInfo: {
-        calories: 95,
-        carbohydrates: 22,
-        protein: 3,
-        fat: 0.5,
-        fiber: 4,
-        sugar: 18,
-        glycemicIndex: 30,
-        servings: 1
-      },
-      prepTime: 10,
-      difficulty: 'easy',
-      tags: ['detox', 'baixa-caloria', 'antioxidante', 'hidratante'],
-      imageUrl: 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
-      createdAt: new Date(),
-      updatedAt: new Date()
-    },
-    {
-      id: '4',
-      name: 'Omelete de Claras com Cogumelos',
-      category: 'breakfast',
-      ingredients: [
-        { name: 'Claras de ovo', amount: 4, unit: 'unidades' },
-        { name: 'Cogumelos paris', amount: 100, unit: 'g' },
-        { name: 'Espinafre', amount: 50, unit: 'g' },
-        { name: 'Queijo cottage', amount: 2, unit: 'colheres de sopa' },
-        { name: 'Azeite', amount: 1, unit: 'colher de chá' },
-        { name: 'Cebola', amount: 0.25, unit: 'unidade' },
-        { name: 'Sal e pimenta', amount: 1, unit: 'a gosto' }
-      ],
-      instructions: [
-        'Refogue a cebola e os cogumelos no azeite',
-        'Adicione o espinafre e refogue até murchar',
-        'Bata as claras com sal e pimenta',
-        'Despeje as claras na frigideira',
-        'Adicione o recheio em uma metade',
-        'Dobre a omelete e sirva quente'
-      ],
-      nutritionInfo: {
-        calories: 180,
-        carbohydrates: 8,
-        protein: 22,
-        fat: 6,
-        fiber: 3,
-        sugar: 4,
-        glycemicIndex: 20,
-        servings: 1
-      },
-      prepTime: 15,
-      difficulty: 'easy',
-      tags: ['alto-em-proteina', 'baixo-carb', 'cafe-da-manha', 'rapido'],
-      imageUrl: 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
-      createdAt: new Date(),
-      updatedAt: new Date()
-    },
-    {
-      id: '5',
-      name: 'Mousse de Chocolate com Abacate',
-      category: 'dessert',
-      ingredients: [
-        { name: 'Abacate maduro', amount: 2, unit: 'unidades' },
-        { name: 'Cacau em pó', amount: 3, unit: 'colheres de sopa' },
-        { name: 'Adoçante stevia', amount: 2, unit: 'colheres de chá' },
-        { name: 'Leite de amêndoas', amount: 100, unit: 'ml' },
-        { name: 'Essência de baunilha', amount: 1, unit: 'colher de chá' },
-        { name: 'Castanhas picadas', amount: 2, unit: 'colheres de sopa' }
-      ],
-      instructions: [
-        'Retire a polpa dos abacates',
-        'Bata no liquidificador com cacau e adoçante',
-        'Adicione o leite de amêndoas aos poucos',
-        'Acrescente a baunilha',
-        'Leve à geladeira por 2 horas',
-        'Sirva decorado com castanhas'
-      ],
-      nutritionInfo: {
-        calories: 220,
-        carbohydrates: 18,
-        protein: 6,
-        fat: 16,
-        fiber: 8,
-        sugar: 8,
-        glycemicIndex: 25,
-        servings: 2
-      },
-      prepTime: 15,
-      difficulty: 'easy',
-      tags: ['sem-acucar', 'vegano', 'rico-em-fibras', 'antioxidante'],
-      imageUrl: 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
-      createdAt: new Date(),
-      updatedAt: new Date()
-    },
-    {
-      id: '6',
-      name: 'Wrap de Frango com Vegetais',
-      category: 'lunch',
-      ingredients: [
-        { name: 'Peito de frango', amount: 120, unit: 'g' },
-        { name: 'Tortilla integral', amount: 1, unit: 'unidade' },
-        { name: 'Alface americana', amount: 3, unit: 'folhas' },
-        { name: 'Tomate', amount: 1, unit: 'unidade' },
-        { name: 'Cenoura ralada', amount: 2, unit: 'colheres de sopa' },
-        { name: 'Iogurte grego', amount: 2, unit: 'colheres de sopa' },
-        { name: 'Mostarda dijon', amount: 1, unit: 'colher de chá' }
-      ],
-      instructions: [
-        'Tempere e grelhe o frango até cozinhar',
-        'Corte o frango em tiras',
-        'Misture o iogurte com a mostarda',
-        'Espalhe o molho na tortilla',
-        'Adicione os vegetais e o frango',
-        'Enrole firmemente e corte ao meio'
-      ],
-      nutritionInfo: {
-        calories: 290,
-        carbohydrates: 28,
-        protein: 25,
-        fat: 8,
-        fiber: 5,
-        sugar: 6,
-        glycemicIndex: 40,
-        servings: 1
-      },
-      prepTime: 20,
-      difficulty: 'medium',
-      tags: ['alto-em-proteina', 'portatil', 'equilibrado', 'pratico'],
-      imageUrl: 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
-      createdAt: new Date(),
-      updatedAt: new Date()
-    }
-  ];
-
   if (loading) {
     return (
       <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-neutral-600">Carregando receitas...</p>
+          <p className="text-sm text-neutral-500 mt-2">Máximo 10 segundos</p>
         </div>
       </div>
     );
@@ -346,6 +164,19 @@ const RecipesPage: React.FC = () => {
             Descubra receitas deliciosas e saudáveis especialmente desenvolvidas 
             para diabéticos, com informações nutricionais completas.
           </p>
+          
+          {/* Status de conexão */}
+          <div className={`mt-4 p-3 border rounded-lg text-sm max-w-md mx-auto ${
+            dataSource === 'supabase' 
+              ? 'bg-green-50 border-green-200 text-green-800' 
+              : 'bg-blue-50 border-blue-200 text-blue-800'
+          }`}>
+            <p>
+              <strong>
+                {dataSource === 'supabase' ? '✅ Conectado ao Supabase' : '📝 Dados de Exemplo'}:
+              </strong> {recipes.length} receitas disponíveis
+            </p>
+          </div>
         </motion.div>
 
         {/* Filters */}
@@ -430,7 +261,9 @@ const RecipesPage: React.FC = () => {
             </p>
             <div className="flex items-center space-x-2 text-sm text-neutral-500">
               <Filter size={16} />
-              <span>Filtros ativos</span>
+              <span>
+                {dataSource === 'supabase' ? 'Dados do Supabase' : 'Dados de exemplo'}
+              </span>
             </div>
           </div>
         </motion.div>
@@ -463,22 +296,27 @@ const RecipesPage: React.FC = () => {
             <Card className="text-center py-12">
               <ChefHat className="w-16 h-16 text-neutral-300 mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-dark-800 mb-2">
-                Nenhuma receita encontrada
+                {recipes.length === 0 ? 'Nenhuma receita disponível' : 'Nenhuma receita encontrada'}
               </h3>
               <p className="text-neutral-600 mb-6">
-                Tente ajustar os filtros para encontrar mais receitas.
+                {recipes.length === 0 
+                  ? 'Adicione receitas ao seu banco Supabase ou verifique a conexão.'
+                  : 'Tente ajustar os filtros para encontrar mais receitas.'
+                }
               </p>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setSearchTerm('');
-                  setSelectedCategory('all');
-                  setSelectedDifficulty('all');
-                  setMaxPrepTime(120);
-                }}
-              >
-                Limpar Filtros
-              </Button>
+              {recipes.length > 0 && (
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setSearchTerm('');
+                    setSelectedCategory('all');
+                    setSelectedDifficulty('all');
+                    setMaxPrepTime(120);
+                  }}
+                >
+                  Limpar Filtros
+                </Button>
+              )}
             </Card>
           </motion.div>
         )}

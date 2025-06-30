@@ -1,47 +1,85 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Calendar, Plus, Clock, Users, Target, ChefHat } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { getMealPlans, createMealPlan } from '../lib/supabase';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 
 const MealPlansPage: React.FC = () => {
+  const { userProfile } = useAuth();
+  const [mealPlans, setMealPlans] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
+  const [dataSource, setDataSource] = useState<'supabase' | 'example'>('supabase');
 
-  const mealPlans = [
-    {
-      id: '1',
-      name: 'Plano Detox 7 Dias',
-      description: 'Plano focado em desintoxicação e controle glicêmico',
-      duration: '7 dias',
-      meals: 21,
-      calories: '1400-1600 kcal/dia',
-      difficulty: 'Fácil',
-      tags: ['Detox', 'Baixo IG', 'Anti-inflamatório'],
-      image: 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400'
-    },
-    {
-      id: '2',
-      name: 'Plano Mediterrâneo 14 Dias',
-      description: 'Baseado na dieta mediterrânea, rica em ômega-3',
-      duration: '14 dias',
-      meals: 42,
-      calories: '1600-1800 kcal/dia',
-      difficulty: 'Médio',
-      tags: ['Mediterrâneo', 'Ômega-3', 'Coração Saudável'],
-      image: 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400'
-    },
-    {
-      id: '3',
-      name: 'Plano Low Carb 21 Dias',
-      description: 'Redução controlada de carboidratos para diabéticos',
-      duration: '21 dias',
-      meals: 63,
-      calories: '1500-1700 kcal/dia',
-      difficulty: 'Avançado',
-      tags: ['Low Carb', 'Cetogênico', 'Perda de Peso'],
-      image: 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400'
+  useEffect(() => {
+    console.log('📅 Carregando página de planos com timeout');
+    fetchMealPlans();
+  }, [userProfile]);
+
+  const fetchMealPlans = async () => {
+    if (!userProfile) {
+      console.log('👤 Aguardando perfil do usuário...');
+      return;
     }
-  ];
+
+    // Timeout para carregamento
+    const loadingTimeout = setTimeout(() => {
+      if (loading) {
+        console.log('⏰ Timeout no carregamento de planos');
+        setLoading(false);
+        setDataSource('example');
+      }
+    }, 10000); // 10 segundos máximo
+
+    try {
+      console.log('📥 Buscando planos de refeição...');
+      const { data, error } = await getMealPlans(userProfile.id);
+      
+      clearTimeout(loadingTimeout);
+      
+      if (data && data.length > 0) {
+        console.log('✅ Planos carregados:', data.length);
+        
+        // Verificar se são dados reais ou de exemplo
+        const isExample = data.some(plan => plan.id?.startsWith('plan-'));
+        setDataSource(isExample ? 'example' : 'supabase');
+        
+        setMealPlans(data);
+      } else {
+        console.log('ℹ️ Nenhum plano encontrado');
+        setMealPlans([]);
+        setDataSource('example');
+      }
+    } catch (error) {
+      console.error('❌ Erro ao carregar planos:', error);
+      clearTimeout(loadingTimeout);
+      setMealPlans([]);
+      setDataSource('example');
+    } finally {
+      clearTimeout(loadingTimeout);
+      setLoading(false);
+    }
+  };
+
+  const handleCreatePlan = async (planData: any) => {
+    if (!userProfile) return;
+
+    try {
+      console.log('📅 Criando novo plano...');
+      const { data, error } = await createMealPlan(userProfile.id, planData);
+      
+      if (data && !error) {
+        console.log('✅ Plano criado com sucesso');
+        fetchMealPlans(); // Recarregar lista
+      } else {
+        console.error('❌ Erro ao criar plano:', error);
+      }
+    } catch (error) {
+      console.error('❌ Erro inesperado ao criar plano:', error);
+    }
+  };
 
   const weeklyMenu = {
     'Segunda-feira': {
@@ -88,6 +126,18 @@ const MealPlansPage: React.FC = () => {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-neutral-600">Carregando planos de refeição...</p>
+          <p className="text-sm text-neutral-500 mt-2">Máximo 10 segundos</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-neutral-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -104,6 +154,19 @@ const MealPlansPage: React.FC = () => {
             Planos alimentares personalizados para diabéticos, com receitas balanceadas 
             e controle glicêmico otimizado.
           </p>
+          
+          {/* Status de conexão */}
+          <div className={`mt-4 p-3 border rounded-lg text-sm max-w-md mx-auto ${
+            dataSource === 'supabase' 
+              ? 'bg-green-50 border-green-200 text-green-800' 
+              : 'bg-blue-50 border-blue-200 text-blue-800'
+          }`}>
+            <p>
+              <strong>
+                {dataSource === 'supabase' ? '✅ Conectado ao Supabase' : '📝 Planos de Exemplo'}:
+              </strong> {mealPlans.length} planos disponíveis
+            </p>
+          </div>
         </motion.div>
 
         {/* Quick Stats */}
@@ -118,7 +181,7 @@ const MealPlansPage: React.FC = () => {
               <Calendar className="w-6 h-6 text-primary-600" />
             </div>
             <h3 className="font-semibold text-dark-800">Planos Ativos</h3>
-            <p className="text-2xl font-bold text-primary-600">3</p>
+            <p className="text-2xl font-bold text-primary-600">{mealPlans.length}</p>
           </Card>
 
           <Card className="text-center">
@@ -126,7 +189,9 @@ const MealPlansPage: React.FC = () => {
               <ChefHat className="w-6 h-6 text-blue-600" />
             </div>
             <h3 className="font-semibold text-dark-800">Receitas</h3>
-            <p className="text-2xl font-bold text-blue-600">126</p>
+            <p className="text-2xl font-bold text-blue-600">
+              {mealPlans.reduce((total, plan) => total + (plan.meals?.totalMeals || 0), 0)}
+            </p>
           </Card>
 
           <Card className="text-center">
@@ -159,75 +224,133 @@ const MealPlansPage: React.FC = () => {
             <h2 className="text-2xl font-heading font-bold text-dark-800">
               Planos Disponíveis
             </h2>
-            <Button icon={Plus} iconPosition="left">
+            <Button 
+              icon={Plus} 
+              iconPosition="left"
+              onClick={() => {
+                // Simular criação de plano
+                const newPlan = {
+                  name: 'Novo Plano Personalizado',
+                  start_date: new Date().toISOString().split('T')[0],
+                  end_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+                  meals: {
+                    description: 'Plano criado pelo usuário',
+                    duration: '7 dias',
+                    totalMeals: 21,
+                    calories: '1500-1700 kcal/dia',
+                    difficulty: 'Personalizado',
+                    tags: ['Personalizado', 'Novo']
+                  }
+                };
+                handleCreatePlan(newPlan);
+              }}
+            >
               Criar Plano Personalizado
             </Button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {mealPlans.map((plan, index) => (
-              <motion.div
-                key={plan.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 * index }}
+          {mealPlans.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {mealPlans.map((plan, index) => (
+                <motion.div
+                  key={plan.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 * index }}
+                >
+                  <Card hover className="h-full">
+                    <img
+                      src="https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400"
+                      alt={plan.name}
+                      className="w-full h-48 object-cover rounded-lg mb-4"
+                    />
+                    
+                    <h3 className="text-xl font-semibold text-dark-800 mb-2">
+                      {plan.name}
+                    </h3>
+                    
+                    <p className="text-neutral-600 mb-4">
+                      {plan.meals?.description || 'Plano personalizado de refeições'}
+                    </p>
+
+                    <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
+                      <div>
+                        <span className="font-medium text-dark-700">Duração:</span>
+                        <p className="text-neutral-600">{plan.meals?.duration || '7 dias'}</p>
+                      </div>
+                      <div>
+                        <span className="font-medium text-dark-700">Refeições:</span>
+                        <p className="text-neutral-600">{plan.meals?.totalMeals || 21}</p>
+                      </div>
+                      <div>
+                        <span className="font-medium text-dark-700">Calorias:</span>
+                        <p className="text-neutral-600">{plan.meals?.calories || '1500 kcal/dia'}</p>
+                      </div>
+                      <div>
+                        <span className="font-medium text-dark-700">Dificuldade:</span>
+                        <p className="text-neutral-600">{plan.meals?.difficulty || 'Médio'}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {(plan.meals?.tags || ['Saudável', 'Diabético']).map((tag: string, tagIndex: number) => (
+                        <span
+                          key={tagIndex}
+                          className="px-2 py-1 bg-primary-100 text-primary-700 text-xs rounded-full"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+
+                    <Button
+                      fullWidth
+                      variant={selectedPlan === plan.id ? 'primary' : 'outline'}
+                      onClick={() => setSelectedPlan(plan.id)}
+                    >
+                      {selectedPlan === plan.id ? 'Plano Ativo' : 'Iniciar Plano'}
+                    </Button>
+                  </Card>
+                </motion.div>
+              ))}
+            </div>
+          ) : (
+            <Card className="text-center py-12">
+              <Calendar className="w-16 h-16 text-neutral-300 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-dark-800 mb-2">
+                Nenhum plano encontrado
+              </h3>
+              <p className="text-neutral-600 mb-6">
+                {dataSource === 'supabase' 
+                  ? 'Crie seu primeiro plano de refeições personalizado.'
+                  : 'Conecte ao Supabase para ver seus planos salvos.'
+                }
+              </p>
+              <Button
+                variant="primary"
+                icon={Plus}
+                iconPosition="left"
+                onClick={() => {
+                  const newPlan = {
+                    name: 'Meu Primeiro Plano',
+                    start_date: new Date().toISOString().split('T')[0],
+                    end_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+                    meals: {
+                      description: 'Plano inicial personalizado',
+                      duration: '7 dias',
+                      totalMeals: 21,
+                      calories: '1500-1700 kcal/dia',
+                      difficulty: 'Iniciante',
+                      tags: ['Primeiro Plano', 'Iniciante']
+                    }
+                  };
+                  handleCreatePlan(newPlan);
+                }}
               >
-                <Card hover className="h-full">
-                  <img
-                    src={plan.image}
-                    alt={plan.name}
-                    className="w-full h-48 object-cover rounded-lg mb-4"
-                  />
-                  
-                  <h3 className="text-xl font-semibold text-dark-800 mb-2">
-                    {plan.name}
-                  </h3>
-                  
-                  <p className="text-neutral-600 mb-4">
-                    {plan.description}
-                  </p>
-
-                  <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
-                    <div>
-                      <span className="font-medium text-dark-700">Duração:</span>
-                      <p className="text-neutral-600">{plan.duration}</p>
-                    </div>
-                    <div>
-                      <span className="font-medium text-dark-700">Refeições:</span>
-                      <p className="text-neutral-600">{plan.meals}</p>
-                    </div>
-                    <div>
-                      <span className="font-medium text-dark-700">Calorias:</span>
-                      <p className="text-neutral-600">{plan.calories}</p>
-                    </div>
-                    <div>
-                      <span className="font-medium text-dark-700">Dificuldade:</span>
-                      <p className="text-neutral-600">{plan.difficulty}</p>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    {plan.tags.map((tag, tagIndex) => (
-                      <span
-                        key={tagIndex}
-                        className="px-2 py-1 bg-primary-100 text-primary-700 text-xs rounded-full"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-
-                  <Button
-                    fullWidth
-                    variant={selectedPlan === plan.id ? 'primary' : 'outline'}
-                    onClick={() => setSelectedPlan(plan.id)}
-                  >
-                    {selectedPlan === plan.id ? 'Plano Ativo' : 'Iniciar Plano'}
-                  </Button>
-                </Card>
-              </motion.div>
-            ))}
-          </div>
+                Criar Primeiro Plano
+              </Button>
+            </Card>
+          )}
         </motion.div>
 
         {/* Weekly Menu Preview */}
@@ -237,7 +360,7 @@ const MealPlansPage: React.FC = () => {
           transition={{ delay: 0.3 }}
         >
           <h2 className="text-2xl font-heading font-bold text-dark-800 mb-6">
-            Cardápio da Semana
+            Cardápio da Semana (Exemplo)
           </h2>
 
           <div className="grid grid-cols-1 lg:grid-cols-7 gap-4">

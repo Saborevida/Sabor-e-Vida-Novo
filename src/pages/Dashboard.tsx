@@ -15,15 +15,17 @@ import { getRecipes, getFavorites } from '../lib/supabase';
 import { Recipe } from '../types';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
+import SubscriptionStatus from '../components/subscription/SubscriptionStatus';
 
 const Dashboard: React.FC = () => {
   const { userProfile } = useAuth();
   const [recentRecipes, setRecentRecipes] = useState<Recipe[]>([]);
   const [favoriteRecipes, setFavoriteRecipes] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(true);
+  const [dataSource, setDataSource] = useState<'supabase' | 'example'>('supabase');
 
   useEffect(() => {
-    console.log('📊 Carregando dados do dashboard');
+    console.log('📊 Carregando dados do dashboard com timeout');
     
     const fetchDashboardData = async () => {
       if (!userProfile) {
@@ -31,30 +33,112 @@ const Dashboard: React.FC = () => {
         return;
       }
 
+      // Timeout para carregamento
+      const loadingTimeout = setTimeout(() => {
+        if (loading) {
+          console.log('⏰ Timeout no carregamento do dashboard');
+          setLoading(false);
+          setDataSource('example');
+        }
+      }, 10000); // 10 segundos máximo
+
       try {
         console.log('🔄 Buscando dados do dashboard para:', userProfile.email);
         
-        // Fetch recent recipes
+        // Buscar receitas com timeout
         const { data: recipes, error: recipesError } = await getRecipes();
         if (recipes && !recipesError) {
           console.log('✅ Receitas carregadas:', recipes.length);
-          setRecentRecipes(recipes.slice(0, 4));
+          
+          // Verificar se são dados reais ou de exemplo
+          const isExample = recipes.some(recipe => recipe.id?.startsWith('example-'));
+          setDataSource(isExample ? 'example' : 'supabase');
+          
+          // Converter dados para o formato esperado
+          const formattedRecipes: Recipe[] = recipes.slice(0, 4).map(recipe => ({
+            id: recipe.id,
+            name: recipe.name,
+            category: recipe.category,
+            ingredients: recipe.ingredients || [],
+            instructions: recipe.instructions || [],
+            nutritionInfo: recipe.nutrition_info || {
+              calories: 0,
+              carbohydrates: 0,
+              protein: 0,
+              fat: 0,
+              fiber: 0,
+              sugar: 0,
+              glycemicIndex: 0,
+              servings: 1
+            },
+            prepTime: recipe.prep_time || 0,
+            difficulty: recipe.difficulty || 'easy',
+            tags: recipe.tags || [],
+            imageUrl: recipe.image_url || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
+            createdAt: new Date(recipe.created_at),
+            updatedAt: new Date(recipe.updated_at)
+          }));
+          
+          setRecentRecipes(formattedRecipes);
         } else {
-          console.log('⚠️ Usando receitas mock');
+          console.log('⚠️ Erro ao carregar receitas:', recipesError);
+          setRecentRecipes([]);
+          setDataSource('example');
         }
 
-        // Fetch favorite recipes
-        const { data: favorites, error: favoritesError } = await getFavorites(userProfile.id);
-        if (favorites && !favoritesError) {
-          console.log('✅ Favoritos carregados:', favorites.length);
-          setFavoriteRecipes(favorites.map(f => f.recipes).filter(Boolean).slice(0, 4));
-        } else {
-          console.log('ℹ️ Nenhum favorito encontrado');
-          setFavoriteRecipes([]);
+        // Buscar favoritos com timeout (apenas se não for dados de exemplo)
+        if (dataSource === 'supabase') {
+          try {
+            const { data: favorites, error: favoritesError } = await getFavorites(userProfile.id);
+            if (favorites && !favoritesError) {
+              console.log('✅ Favoritos carregados:', favorites.length);
+              
+              // Converter favoritos para receitas
+              const favoriteRecipesList: Recipe[] = favorites
+                .filter(fav => fav.recipes)
+                .slice(0, 4)
+                .map(fav => {
+                  const recipe = fav.recipes;
+                  return {
+                    id: recipe.id,
+                    name: recipe.name,
+                    category: recipe.category,
+                    ingredients: recipe.ingredients || [],
+                    instructions: recipe.instructions || [],
+                    nutritionInfo: recipe.nutrition_info || {
+                      calories: 0,
+                      carbohydrates: 0,
+                      protein: 0,
+                      fat: 0,
+                      fiber: 0,
+                      sugar: 0,
+                      glycemicIndex: 0,
+                      servings: 1
+                    },
+                    prepTime: recipe.prep_time || 0,
+                    difficulty: recipe.difficulty || 'easy',
+                    tags: recipe.tags || [],
+                    imageUrl: recipe.image_url || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
+                    createdAt: new Date(recipe.created_at),
+                    updatedAt: new Date(recipe.updated_at)
+                  };
+                });
+              
+              setFavoriteRecipes(favoriteRecipesList);
+            } else {
+              console.log('ℹ️ Nenhum favorito encontrado');
+              setFavoriteRecipes([]);
+            }
+          } catch (favError) {
+            console.log('⚠️ Erro ao carregar favoritos (continuando):', favError);
+            setFavoriteRecipes([]);
+          }
         }
       } catch (error) {
         console.error('❌ Erro ao carregar dados do dashboard:', error);
+        setDataSource('example');
       } finally {
+        clearTimeout(loadingTimeout);
         setLoading(false);
         console.log('✅ Carregamento do dashboard concluído');
       }
@@ -73,14 +157,14 @@ const Dashboard: React.FC = () => {
     },
     {
       title: 'Planos Criados',
-      value: 3,
+      value: 0,
       icon: Calendar,
       color: 'text-blue-500',
       bgColor: 'bg-blue-100',
     },
     {
-      title: 'Artigos Lidos',
-      value: 12,
+      title: 'Receitas Disponíveis',
+      value: recentRecipes.length,
       icon: BookOpen,
       color: 'text-green-500',
       bgColor: 'bg-green-100',
@@ -123,7 +207,8 @@ const Dashboard: React.FC = () => {
       <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-neutral-600">Carregando seu dashboard...</p>
+          <p className="text-neutral-600">Carregando dashboard...</p>
+          <p className="text-sm text-neutral-500 mt-2">Máximo 10 segundos</p>
         </div>
       </div>
     );
@@ -145,15 +230,31 @@ const Dashboard: React.FC = () => {
             Bem-vindo de volta ao seu painel de controle nutricional
           </p>
           
-          {/* Debug info em desenvolvimento */}
-          {import.meta.env.DEV && (
-            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm">
-              <p><strong>Debug:</strong> Dashboard carregado com sucesso</p>
-              <p><strong>Usuário:</strong> {userProfile?.email}</p>
-              <p><strong>Receitas:</strong> {recentRecipes.length}</p>
-              <p><strong>Favoritos:</strong> {favoriteRecipes.length}</p>
-            </div>
-          )}
+          {/* Status de conexão */}
+          <div className={`mt-4 p-3 border rounded-lg text-sm ${
+            dataSource === 'supabase' 
+              ? 'bg-green-50 border-green-200 text-green-800' 
+              : 'bg-blue-50 border-blue-200 text-blue-800'
+          }`}>
+            <p>
+              <strong>
+                {dataSource === 'supabase' ? '✅ Conectado ao Supabase' : '📝 Dados de Exemplo'}
+              </strong>
+            </p>
+            <p><strong>👤 Usuário:</strong> {userProfile?.email}</p>
+            <p><strong>🍽️ Receitas:</strong> {recentRecipes.length}</p>
+            <p><strong>❤️ Favoritos:</strong> {favoriteRecipes.length}</p>
+          </div>
+        </motion.div>
+
+        {/* Subscription Status */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="mb-8"
+        >
+          <SubscriptionStatus />
         </motion.div>
 
         {/* Stats Grid */}
@@ -227,7 +328,7 @@ const Dashboard: React.FC = () => {
                   <Card key={recipe.id} hover padding="sm">
                     <div className="flex items-center space-x-4">
                       <img
-                        src={recipe.imageUrl || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=100'}
+                        src={recipe.imageUrl}
                         alt={recipe.name}
                         className="w-16 h-16 rounded-lg object-cover"
                       />
@@ -255,7 +356,13 @@ const Dashboard: React.FC = () => {
                 <Card className="text-center py-8">
                   <ChefHat className="w-12 h-12 text-neutral-300 mx-auto mb-4" />
                   <p className="text-neutral-600 mb-4">
-                    Carregando receitas...
+                    Nenhuma receita encontrada
+                  </p>
+                  <p className="text-sm text-neutral-500">
+                    {dataSource === 'supabase' 
+                      ? 'Adicione receitas ao banco de dados'
+                      : 'Conecte ao Supabase para ver dados reais'
+                    }
                   </p>
                 </Card>
               )}
@@ -282,7 +389,7 @@ const Dashboard: React.FC = () => {
                   <Card key={recipe.id} hover padding="sm">
                     <div className="flex items-center space-x-4">
                       <img
-                        src={recipe.imageUrl || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=100'}
+                        src={recipe.imageUrl}
                         alt={recipe.name}
                         className="w-16 h-16 rounded-lg object-cover"
                       />

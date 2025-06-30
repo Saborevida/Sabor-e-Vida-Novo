@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User as SupabaseUser } from '@supabase/supabase-js';
-import { supabase, getCurrentUser } from '../lib/supabase';
+import { supabase, getCurrentUser, getUserProfile, upsertUserProfile } from '../lib/supabase';
 import { User } from '../types';
 
 interface AuthContextType {
@@ -28,96 +28,181 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    console.log('🔄 INITIALIZING AuthProvider - FIXED VERSION');
+    console.log('🔄 INICIALIZANDO AuthProvider - VERSÃO COM TIMEOUT CORRIGIDA');
     
     let mounted = true;
     
-    // Get initial session with timeout
+    // Timeout para inicialização
+    const initTimeout = setTimeout(() => {
+      if (mounted && loading) {
+        console.log('⏰ Timeout na inicialização, continuando sem autenticação');
+        setLoading(false);
+      }
+    }, 8000);
+    
+    // Obter sessão inicial com timeout
     const getSession = async () => {
       try {
-        console.log('🔍 Checking initial session with timeout');
+        console.log('🔍 Verificando sessão inicial com timeout');
         
-        // Add timeout to prevent infinite loading
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Session check timeout')), 10000)
-        );
-        
-        const sessionPromise = getCurrentUser();
-        
-        const { user } = await Promise.race([sessionPromise, timeoutPromise]) as any;
+        const { user } = await getCurrentUser();
         
         if (!mounted) return;
         
         setUser(user);
         
         if (user) {
-          console.log('👤 User found, creating mock profile');
-          // Always use mock profile to avoid database issues
-          const mockProfile = {
-            id: user.id,
-            email: user.email || '',
-            name: user.email?.split('@')[0] || 'Usuário',
-            dateOfBirth: null,
-            diabetesType: 'type2' as const,
-            healthGoals: [],
-            dietaryPreferences: [],
-            subscriptionPlan: 'free' as const,
-            createdAt: new Date(),
-            updatedAt: new Date()
-          };
-          setUserProfile(mockProfile);
+          console.log('👤 Usuário encontrado, carregando perfil');
+          
+          try {
+            // Buscar perfil com timeout
+            const { data: profile, error } = await getUserProfile(user.id);
+            
+            if (profile && !error) {
+              console.log('✅ Perfil carregado:', profile.email);
+              setUserProfile({
+                id: profile.id,
+                email: profile.email,
+                name: profile.name || user.email?.split('@')[0] || 'Usuário',
+                dateOfBirth: profile.date_of_birth ? new Date(profile.date_of_birth) : undefined,
+                diabetesType: profile.diabetes_type || 'type2',
+                healthGoals: profile.health_goals || [],
+                dietaryPreferences: profile.dietary_preferences || [],
+                subscriptionPlan: profile.subscription_plan || 'free',
+                createdAt: new Date(profile.created_at),
+                updatedAt: new Date(profile.updated_at)
+              });
+            } else {
+              console.log('⚠️ Perfil não encontrado, criando perfil básico');
+              
+              // Criar perfil básico sem aguardar
+              const basicProfile = {
+                id: user.id,
+                email: user.email || '',
+                name: user.email?.split('@')[0] || 'Usuário',
+                dateOfBirth: undefined,
+                diabetesType: 'type2' as const,
+                healthGoals: [],
+                dietaryPreferences: [],
+                subscriptionPlan: 'free' as const,
+                createdAt: new Date(),
+                updatedAt: new Date()
+              };
+              
+              setUserProfile(basicProfile);
+              
+              // Tentar criar no banco em background
+              upsertUserProfile(user.id, {
+                email: user.email || '',
+                name: user.email?.split('@')[0] || 'Usuário',
+                diabetes_type: 'type2',
+                health_goals: [],
+                dietary_preferences: [],
+                subscription_plan: 'free'
+              }).catch(err => console.log('⚠️ Erro ao criar perfil (continuando):', err));
+            }
+          } catch (profileError) {
+            console.log('⚠️ Erro ao carregar perfil, usando dados básicos:', profileError);
+            
+            // Usar dados básicos do usuário
+            setUserProfile({
+              id: user.id,
+              email: user.email || '',
+              name: user.email?.split('@')[0] || 'Usuário',
+              dateOfBirth: undefined,
+              diabetesType: 'type2',
+              healthGoals: [],
+              dietaryPreferences: [],
+              subscriptionPlan: 'free',
+              createdAt: new Date(),
+              updatedAt: new Date()
+            });
+          }
         } else {
-          console.log('👤 No user logged in');
+          console.log('👤 Nenhum usuário logado');
           setUserProfile(null);
         }
       } catch (error) {
-        console.error('❌ Error checking session:', error);
-        // Don't fail, just continue without user
+        console.error('❌ Erro na verificação de sessão (continuando):', error);
         if (mounted) {
           setUser(null);
           setUserProfile(null);
         }
       } finally {
         if (mounted) {
+          clearTimeout(initTimeout);
           setLoading(false);
-          console.log('✅ AuthProvider initialization completed');
+          console.log('✅ Inicialização concluída');
         }
       }
     };
 
     getSession();
 
-    // Listen for auth changes with error handling
-    console.log('👂 Setting up authentication listener');
+    // Escutar mudanças de autenticação com timeout
+    console.log('👂 Configurando listener de autenticação');
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      async (event: string, session: any) => {
         if (!mounted) return;
         
-        console.log('🔔 Authentication event:', event, session?.user?.email);
+        console.log('🔔 Evento de autenticação:', event, session?.user?.email);
         
         try {
           setUser(session?.user || null);
           
           if (session?.user) {
-            // Always use mock profile
-            const mockProfile = {
-              id: session.user.id,
-              email: session.user.email || '',
-              name: session.user.email?.split('@')[0] || 'Usuário',
-              dateOfBirth: null,
-              diabetesType: 'type2' as const,
-              healthGoals: [],
-              dietaryPreferences: [],
-              subscriptionPlan: 'free' as const,
-              createdAt: new Date(),
-              updatedAt: new Date()
-            };
-            setUserProfile(mockProfile);
+            // Tentar carregar perfil, mas não travar se der erro
+            try {
+              const { data: profile } = await getUserProfile(session.user.id);
+              
+              if (profile) {
+                setUserProfile({
+                  id: profile.id,
+                  email: profile.email,
+                  name: profile.name,
+                  dateOfBirth: profile.date_of_birth ? new Date(profile.date_of_birth) : undefined,
+                  diabetesType: profile.diabetes_type,
+                  healthGoals: profile.health_goals || [],
+                  dietaryPreferences: profile.dietary_preferences || [],
+                  subscriptionPlan: profile.subscription_plan,
+                  createdAt: new Date(profile.created_at),
+                  updatedAt: new Date(profile.updated_at)
+                });
+              } else {
+                // Perfil básico
+                setUserProfile({
+                  id: session.user.id,
+                  email: session.user.email || '',
+                  name: session.user.email?.split('@')[0] || 'Usuário',
+                  dateOfBirth: undefined,
+                  diabetesType: 'type2',
+                  healthGoals: [],
+                  dietaryPreferences: [],
+                  subscriptionPlan: 'free',
+                  createdAt: new Date(),
+                  updatedAt: new Date()
+                });
+              }
+            } catch (profileError) {
+              console.log('⚠️ Erro ao carregar perfil no evento (usando básico):', profileError);
+              setUserProfile({
+                id: session.user.id,
+                email: session.user.email || '',
+                name: session.user.email?.split('@')[0] || 'Usuário',
+                dateOfBirth: undefined,
+                diabetesType: 'type2',
+                healthGoals: [],
+                dietaryPreferences: [],
+                subscriptionPlan: 'free',
+                createdAt: new Date(),
+                updatedAt: new Date()
+              });
+            }
           } else {
             setUserProfile(null);
           }
         } catch (error) {
-          console.error('❌ Error in auth state change:', error);
+          console.error('❌ Erro no evento de autenticação (continuando):', error);
         }
         
         setLoading(false);
@@ -126,13 +211,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     return () => {
       mounted = false;
-      console.log('🔇 Removing authentication listener');
+      clearTimeout(initTimeout);
+      console.log('🔇 Removendo listener de autenticação');
       subscription.unsubscribe();
     };
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    console.log('🔐 Starting login process');
+    console.log('🔐 Iniciando processo de login');
     
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -141,20 +227,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       
       if (error) {
-        console.error('❌ Login error:', error);
+        console.error('❌ Erro no login:', error);
       } else {
-        console.log('✅ Login successful');
+        console.log('✅ Login realizado com sucesso');
       }
       
       return { data, error };
     } catch (err) {
-      console.error('❌ Unexpected login error:', err);
+      console.error('❌ Erro inesperado no login:', err);
       return { data: null, error: err };
     }
   };
 
   const signUp = async (email: string, password: string, userData: any) => {
-    console.log('🔐 Starting signup process');
+    console.log('🔐 Iniciando processo de cadastro');
     
     try {
       const { data, error } = await supabase.auth.signUp({
@@ -167,24 +253,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
 
       if (data.user && !error) {
-        console.log('✅ Signup successful');
+        console.log('✅ Cadastro realizado com sucesso');
       }
 
       return { data, error };
     } catch (err) {
-      console.error('❌ Unexpected signup error:', err);
+      console.error('❌ Erro inesperado no cadastro:', err);
       return { data: null, error: err };
     }
   };
 
   const signOut = async () => {
-    console.log('🔐 Logging out');
+    console.log('🔐 Fazendo logout');
     
     try {
       await supabase.auth.signOut();
-      console.log('✅ Logout completed');
+      console.log('✅ Logout concluído');
     } catch (err) {
-      console.error('❌ Logout error:', err);
+      console.error('❌ Erro no logout:', err);
     }
   };
 

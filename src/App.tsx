@@ -11,6 +11,8 @@ import MealPlansPage from './pages/MealPlans';
 import EducationPage from './pages/Education';
 import FavoritesPage from './pages/Favorites';
 import ProfilePage from './pages/Profile';
+import PricingPage from './pages/Pricing';
+import SuccessPage from './pages/Success';
 
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -249,6 +251,8 @@ function App() {
                   </PublicRoute>
                 } 
               />
+              <Route path="/pricing" element={<PricingPage />} />
+              <Route path="/success" element={<SuccessPage />} />
               <Route 
                 path="/dashboard" 
                 element={

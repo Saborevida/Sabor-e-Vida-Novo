@@ -77,7 +77,7 @@ const Home: React.FC = () => {
     },
     {
       name: 'Premium',
-      price: 'R$ 29,90',
+      price: 'R$ 19,90',
       period: '/mês',
       features: [
         'Acesso completo a todas as receitas',
@@ -131,9 +131,9 @@ const Home: React.FC = () => {
                     Começar Gratuitamente
                   </Button>
                 </Link>
-                <Link to="/recipes">
+                <Link to="/pricing">
                   <Button variant="outline" size="lg">
-                    Ver Receitas
+                    Ver Planos
                   </Button>
                 </Link>
               </div>
@@ -271,7 +271,7 @@ const Home: React.FC = () => {
                     ))}
                   </ul>
 
-                  <Link to="/register">
+                  <Link to={plan.name === 'Gratuito' ? '/register' : '/pricing'}>
                     <Button fullWidth variant={plan.variant} size="lg">
                       {plan.cta}
                     </Button>
