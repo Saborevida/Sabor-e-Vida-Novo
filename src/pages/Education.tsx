@@ -5,6 +5,7 @@ import { getEducationalContent, incrementArticleViews } from '../lib/supabase';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
+import Modal from '../components/ui/Modal';
 
 const EducationPage: React.FC = () => {
   const [articles, setArticles] = useState<any[]>([]);
@@ -13,6 +14,8 @@ const EducationPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [dataSource, setDataSource] = useState<'supabase' | 'example'>('supabase');
+  const [selectedArticle, setSelectedArticle] = useState<any>(null);
+  const [showArticleModal, setShowArticleModal] = useState(false);
 
   const categories = [
     { value: 'all', label: 'Todos os Tópicos' },
@@ -98,8 +101,8 @@ const EducationPage: React.FC = () => {
       await incrementArticleViews(article.id);
     }
     
-    // Aqui você pode implementar a navegação para a página do artigo
-    console.log('📖 Abrindo artigo:', article.title);
+    setSelectedArticle(article);
+    setShowArticleModal(true);
   };
 
   const getDifficultyColor = (difficulty: string) => {
@@ -376,6 +379,81 @@ const EducationPage: React.FC = () => {
           </motion.div>
         )}
       </div>
+
+      {/* Article Modal */}
+      <Modal
+        isOpen={showArticleModal}
+        onClose={() => setShowArticleModal(false)}
+        title={selectedArticle?.title}
+        size="xl"
+      >
+        {selectedArticle && (
+          <div className="space-y-6">
+            {/* Article Image */}
+            <img
+              src={selectedArticle.image}
+              alt={selectedArticle.title}
+              className="w-full h-64 object-cover rounded-lg"
+            />
+
+            {/* Article Meta */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4 text-sm text-neutral-600">
+                <div className="flex items-center space-x-1">
+                  <Clock size={16} />
+                  <span>{selectedArticle.readTime} min de leitura</span>
+                </div>
+                <div className="flex items-center space-x-1">
+                  <Users size={16} />
+                  <span>{selectedArticle.views} visualizações</span>
+                </div>
+                <div className="flex items-center space-x-1">
+                  <Star size={16} className="text-yellow-500" />
+                  <span>{selectedArticle.rating}</span>
+                </div>
+              </div>
+              <span className={`px-3 py-1 text-sm rounded-full ${getDifficultyColor(selectedArticle.difficulty)}`}>
+                {selectedArticle.difficulty}
+              </span>
+            </div>
+
+            {/* Article Content */}
+            <div className="prose prose-lg max-w-none">
+              {selectedArticle.content ? (
+                <div dangerouslySetInnerHTML={{ 
+                  __html: selectedArticle.content.replace(/\n/g, '<br>').replace(/#{1,6}\s/g, '<h3>').replace(/<h3>/g, '<h3 class="text-xl font-semibold text-dark-800 mt-6 mb-3">') 
+                }} />
+              ) : (
+                <p>{selectedArticle.excerpt}</p>
+              )}
+            </div>
+
+            {/* Tags */}
+            {selectedArticle.tags && selectedArticle.tags.length > 0 && (
+              <div>
+                <h4 className="font-semibold text-dark-800 mb-3">Tags</h4>
+                <div className="flex flex-wrap gap-2">
+                  {selectedArticle.tags.map((tag: string, index: number) => (
+                    <span
+                      key={index}
+                      className="px-3 py-1 bg-primary-100 text-primary-700 text-sm rounded-full"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Author */}
+            <div className="border-t pt-4">
+              <p className="text-sm text-neutral-600">
+                Por <span className="font-medium">{selectedArticle.author || 'Equipe Sabor & Vida'}</span>
+              </p>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 };

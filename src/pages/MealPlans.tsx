@@ -5,6 +5,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { getMealPlans, createMealPlan } from '../lib/supabase';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
+import Modal from '../components/ui/Modal';
+import Input from '../components/ui/Input';
 
 const MealPlansPage: React.FC = () => {
   const { userProfile } = useAuth();
@@ -12,6 +14,10 @@ const MealPlansPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   const [dataSource, setDataSource] = useState<'supabase' | 'example'>('supabase');
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showPlanModal, setShowPlanModal] = useState(false);
+  const [selectedPlanDetails, setSelectedPlanDetails] = useState<any>(null);
+  const [creating, setCreating] = useState(false);
 
   useEffect(() => {
     console.log('📅 Carregando página de planos com timeout');
@@ -63,8 +69,26 @@ const MealPlansPage: React.FC = () => {
     }
   };
 
-  const handleCreatePlan = async (planData: any) => {
+  const handleCreatePlan = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (!userProfile) return;
+
+    setCreating(true);
+    const formData = new FormData(e.target as HTMLFormElement);
+    
+    const planData = {
+      name: formData.get('name') as string,
+      start_date: formData.get('startDate') as string,
+      end_date: formData.get('endDate') as string,
+      meals: {
+        description: formData.get('description') as string,
+        duration: calculateDuration(formData.get('startDate') as string, formData.get('endDate') as string),
+        totalMeals: calculateTotalMeals(formData.get('startDate') as string, formData.get('endDate') as string),
+        calories: '1500-1700 kcal/dia',
+        difficulty: formData.get('difficulty') as string,
+        tags: ['Personalizado', 'Novo']
+      }
+    };
 
     try {
       console.log('📅 Criando novo plano...');
@@ -72,13 +96,39 @@ const MealPlansPage: React.FC = () => {
       
       if (data && !error) {
         console.log('✅ Plano criado com sucesso');
+        setShowCreateModal(false);
         fetchMealPlans(); // Recarregar lista
       } else {
         console.error('❌ Erro ao criar plano:', error);
+        alert('Erro ao criar plano. Tente novamente.');
       }
     } catch (error) {
       console.error('❌ Erro inesperado ao criar plano:', error);
+      alert('Erro inesperado. Tente novamente.');
+    } finally {
+      setCreating(false);
     }
+  };
+
+  const calculateDuration = (startDate: string, endDate: string) => {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const diffTime = Math.abs(end.getTime() - start.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return `${diffDays} dias`;
+  };
+
+  const calculateTotalMeals = (startDate: string, endDate: string) => {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const diffTime = Math.abs(end.getTime() - start.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays * 3; // 3 refeições por dia
+  };
+
+  const handleViewPlan = (plan: any) => {
+    setSelectedPlanDetails(plan);
+    setShowPlanModal(true);
   };
 
   const weeklyMenu = {
@@ -227,23 +277,7 @@ const MealPlansPage: React.FC = () => {
             <Button 
               icon={Plus} 
               iconPosition="left"
-              onClick={() => {
-                // Simular criação de plano
-                const newPlan = {
-                  name: 'Novo Plano Personalizado',
-                  start_date: new Date().toISOString().split('T')[0],
-                  end_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-                  meals: {
-                    description: 'Plano criado pelo usuário',
-                    duration: '7 dias',
-                    totalMeals: 21,
-                    calories: '1500-1700 kcal/dia',
-                    difficulty: 'Personalizado',
-                    tags: ['Personalizado', 'Novo']
-                  }
-                };
-                handleCreatePlan(newPlan);
-              }}
+              onClick={() => setShowCreateModal(true)}
             >
               Criar Plano Personalizado
             </Button>
@@ -303,13 +337,23 @@ const MealPlansPage: React.FC = () => {
                       ))}
                     </div>
 
-                    <Button
-                      fullWidth
-                      variant={selectedPlan === plan.id ? 'primary' : 'outline'}
-                      onClick={() => setSelectedPlan(plan.id)}
-                    >
-                      {selectedPlan === plan.id ? 'Plano Ativo' : 'Iniciar Plano'}
-                    </Button>
+                    <div className="space-y-2">
+                      <Button
+                        fullWidth
+                        variant={selectedPlan === plan.id ? 'primary' : 'outline'}
+                        onClick={() => setSelectedPlan(plan.id)}
+                      >
+                        {selectedPlan === plan.id ? 'Plano Ativo' : 'Iniciar Plano'}
+                      </Button>
+                      <Button
+                        fullWidth
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleViewPlan(plan)}
+                      >
+                        Ver Detalhes
+                      </Button>
+                    </div>
                   </Card>
                 </motion.div>
               ))}
@@ -330,22 +374,7 @@ const MealPlansPage: React.FC = () => {
                 variant="primary"
                 icon={Plus}
                 iconPosition="left"
-                onClick={() => {
-                  const newPlan = {
-                    name: 'Meu Primeiro Plano',
-                    start_date: new Date().toISOString().split('T')[0],
-                    end_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-                    meals: {
-                      description: 'Plano inicial personalizado',
-                      duration: '7 dias',
-                      totalMeals: 21,
-                      calories: '1500-1700 kcal/dia',
-                      difficulty: 'Iniciante',
-                      tags: ['Primeiro Plano', 'Iniciante']
-                    }
-                  };
-                  handleCreatePlan(newPlan);
-                }}
+                onClick={() => setShowCreateModal(true)}
               >
                 Criar Primeiro Plano
               </Button>
@@ -411,6 +440,143 @@ const MealPlansPage: React.FC = () => {
           </div>
         </motion.div>
       </div>
+
+      {/* Create Plan Modal */}
+      <Modal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        title="Criar Novo Plano de Refeição"
+        size="lg"
+      >
+        <form onSubmit={handleCreatePlan} className="space-y-6">
+          <Input
+            label="Nome do Plano"
+            name="name"
+            type="text"
+            placeholder="Ex: Plano Detox 7 Dias"
+            required
+          />
+
+          <Input
+            label="Descrição"
+            name="description"
+            type="text"
+            placeholder="Descreva o objetivo do plano"
+            required
+          />
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input
+              label="Data de Início"
+              name="startDate"
+              type="date"
+              required
+            />
+
+            <Input
+              label="Data de Fim"
+              name="endDate"
+              type="date"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-dark-700 mb-1">
+              Dificuldade
+            </label>
+            <select
+              name="difficulty"
+              className="block w-full px-3 py-2.5 text-base border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              required
+            >
+              <option value="Fácil">Fácil</option>
+              <option value="Médio">Médio</option>
+              <option value="Difícil">Difícil</option>
+            </select>
+          </div>
+
+          <div className="flex space-x-4">
+            <Button
+              type="button"
+              variant="outline"
+              fullWidth
+              onClick={() => setShowCreateModal(false)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              fullWidth
+              loading={creating}
+            >
+              {creating ? 'Criando...' : 'Criar Plano'}
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Plan Details Modal */}
+      <Modal
+        isOpen={showPlanModal}
+        onClose={() => setShowPlanModal(false)}
+        title={selectedPlanDetails?.name}
+        size="lg"
+      >
+        {selectedPlanDetails && (
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <h4 className="font-semibold text-dark-800 mb-2">Informações Gerais</h4>
+                <div className="space-y-2 text-sm">
+                  <p><strong>Duração:</strong> {selectedPlanDetails.meals?.duration}</p>
+                  <p><strong>Total de Refeições:</strong> {selectedPlanDetails.meals?.totalMeals}</p>
+                  <p><strong>Calorias:</strong> {selectedPlanDetails.meals?.calories}</p>
+                  <p><strong>Dificuldade:</strong> {selectedPlanDetails.meals?.difficulty}</p>
+                </div>
+              </div>
+              <div>
+                <h4 className="font-semibold text-dark-800 mb-2">Período</h4>
+                <div className="space-y-2 text-sm">
+                  <p><strong>Início:</strong> {new Date(selectedPlanDetails.start_date).toLocaleDateString('pt-BR')}</p>
+                  <p><strong>Fim:</strong> {new Date(selectedPlanDetails.end_date).toLocaleDateString('pt-BR')}</p>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h4 className="font-semibold text-dark-800 mb-2">Descrição</h4>
+              <p className="text-neutral-600">{selectedPlanDetails.meals?.description}</p>
+            </div>
+
+            <div>
+              <h4 className="font-semibold text-dark-800 mb-2">Tags</h4>
+              <div className="flex flex-wrap gap-2">
+                {(selectedPlanDetails.meals?.tags || []).map((tag: string, index: number) => (
+                  <span
+                    key={index}
+                    className="px-3 py-1 bg-primary-100 text-primary-700 text-sm rounded-full"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            <Button
+              fullWidth
+              variant="primary"
+              onClick={() => {
+                setSelectedPlan(selectedPlanDetails.id);
+                setShowPlanModal(false);
+              }}
+            >
+              Ativar Este Plano
+            </Button>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 };

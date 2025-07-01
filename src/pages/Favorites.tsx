@@ -45,7 +45,34 @@ const FavoritesPage: React.FC = () => {
       const { data, error } = await getFavorites(user.id);
       
       if (data && !error) {
-        const favoriteRecipes = data.map(fav => fav.recipes).filter(Boolean);
+        // Converter e validar dados dos favoritos
+        const favoriteRecipes = data
+          .map(fav => fav.recipes)
+          .filter(Boolean)
+          .map(recipe => ({
+            id: recipe.id,
+            name: recipe.name || 'Receita sem nome',
+            category: recipe.category || 'other',
+            ingredients: recipe.ingredients || [],
+            instructions: recipe.instructions || [],
+            nutritionInfo: {
+              calories: recipe.nutrition_info?.calories || 0,
+              carbohydrates: recipe.nutrition_info?.carbohydrates || 0,
+              protein: recipe.nutrition_info?.protein || 0,
+              fat: recipe.nutrition_info?.fat || 0,
+              fiber: recipe.nutrition_info?.fiber || 0,
+              sugar: recipe.nutrition_info?.sugar || 0,
+              glycemicIndex: recipe.nutrition_info?.glycemicIndex || 0,
+              servings: recipe.nutrition_info?.servings || 1
+            },
+            prepTime: recipe.prep_time || 0,
+            difficulty: recipe.difficulty || 'easy',
+            tags: recipe.tags || [],
+            imageUrl: recipe.image_url || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
+            createdAt: new Date(recipe.created_at || Date.now()),
+            updatedAt: new Date(recipe.updated_at || Date.now())
+          }));
+        
         console.log('✅ Favoritos carregados:', favoriteRecipes.length);
         setFavorites(favoriteRecipes);
       } else {
@@ -82,6 +109,37 @@ const FavoritesPage: React.FC = () => {
   const handleFavoriteChange = () => {
     fetchFavorites();
   };
+
+  // Função para calcular estatísticas com validação
+  const calculateStats = () => {
+    if (favorites.length === 0) {
+      return {
+        avgTime: 0,
+        avgGI: 0,
+        totalServings: 0
+      };
+    }
+
+    const avgTime = Math.round(
+      favorites.reduce((acc, recipe) => acc + (recipe.prepTime || 0), 0) / favorites.length
+    );
+
+    const avgGI = Math.round(
+      favorites.reduce((acc, recipe) => {
+        const gi = recipe.nutritionInfo?.glycemicIndex || 0;
+        return acc + gi;
+      }, 0) / favorites.length
+    );
+
+    const totalServings = favorites.reduce((acc, recipe) => {
+      const servings = recipe.nutritionInfo?.servings || 0;
+      return acc + servings;
+    }, 0);
+
+    return { avgTime, avgGI, totalServings };
+  };
+
+  const stats = calculateStats();
 
   if (loading) {
     return (
@@ -135,12 +193,7 @@ const FavoritesPage: React.FC = () => {
               <Clock className="w-6 h-6 text-blue-600" />
             </div>
             <h3 className="font-semibold text-dark-800">Tempo Médio</h3>
-            <p className="text-2xl font-bold text-blue-600">
-              {favorites.length > 0 
-                ? Math.round(favorites.reduce((acc, recipe) => acc + recipe.prepTime, 0) / favorites.length)
-                : 0
-              }
-            </p>
+            <p className="text-2xl font-bold text-blue-600">{stats.avgTime}</p>
             <p className="text-sm text-neutral-600">minutos</p>
           </Card>
 
@@ -149,12 +202,7 @@ const FavoritesPage: React.FC = () => {
               <Star className="w-6 h-6 text-green-600" />
             </div>
             <h3 className="font-semibold text-dark-800">IG Médio</h3>
-            <p className="text-2xl font-bold text-green-600">
-              {favorites.length > 0 
-                ? Math.round(favorites.reduce((acc, recipe) => acc + recipe.nutritionInfo.glycemicIndex, 0) / favorites.length)
-                : 0
-              }
-            </p>
+            <p className="text-2xl font-bold text-green-600">{stats.avgGI}</p>
           </Card>
 
           <Card className="text-center">
@@ -162,9 +210,7 @@ const FavoritesPage: React.FC = () => {
               <Users className="w-6 h-6 text-yellow-600" />
             </div>
             <h3 className="font-semibold text-dark-800">Porções Totais</h3>
-            <p className="text-2xl font-bold text-yellow-600">
-              {favorites.reduce((acc, recipe) => acc + recipe.nutritionInfo.servings, 0)}
-            </p>
+            <p className="text-2xl font-bold text-yellow-600">{stats.totalServings}</p>
           </Card>
         </motion.div>
 
@@ -266,7 +312,7 @@ const FavoritesPage: React.FC = () => {
                 Explore nossa biblioteca de receitas e salve suas preparações favoritas 
                 clicando no ícone de coração.
               </p>
-              <Button variant="primary" size="lg">
+              <Button variant="primary" size="lg" onClick={() => window.location.href = '/recipes'}>
                 Explorar Receitas
               </Button>
             </Card>
