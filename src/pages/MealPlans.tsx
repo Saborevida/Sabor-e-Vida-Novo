@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Calendar, Plus, Clock, Users, Target, ChefHat } from 'lucide-react';
+import { Calendar, Plus, Clock, Users, Target, ChefHat, ShoppingCart } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { getMealPlans, createMealPlan } from '../lib/supabase';
+import { getMealPlans, createMealPlan, getRecipes, createShoppingList } from '../lib/supabase';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Modal from '../components/ui/Modal';
@@ -11,6 +11,7 @@ import Input from '../components/ui/Input';
 const MealPlansPage: React.FC = () => {
   const { userProfile } = useAuth();
   const [mealPlans, setMealPlans] = useState<any[]>([]);
+  const [recipes, setRecipes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   const [dataSource, setDataSource] = useState<'supabase' | 'example'>('supabase');
@@ -18,10 +19,12 @@ const MealPlansPage: React.FC = () => {
   const [showPlanModal, setShowPlanModal] = useState(false);
   const [selectedPlanDetails, setSelectedPlanDetails] = useState<any>(null);
   const [creating, setCreating] = useState(false);
+  const [generatingList, setGeneratingList] = useState(false);
 
   useEffect(() => {
     console.log('📅 Carregando página de planos com timeout');
     fetchMealPlans();
+    fetchRecipes();
   }, [userProfile]);
 
   const fetchMealPlans = async () => {
@@ -66,6 +69,17 @@ const MealPlansPage: React.FC = () => {
     } finally {
       clearTimeout(loadingTimeout);
       setLoading(false);
+    }
+  };
+
+  const fetchRecipes = async () => {
+    try {
+      const { data, error } = await getRecipes();
+      if (data && !error) {
+        setRecipes(data);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar receitas:', error);
     }
   };
 
@@ -130,6 +144,91 @@ const MealPlansPage: React.FC = () => {
     setSelectedPlanDetails(plan);
     setShowPlanModal(true);
   };
+
+  const handleGenerateShoppingList = async (plan: any) => {
+    if (!userProfile) return;
+
+    setGeneratingList(true);
+    try {
+      console.log('🛒 Gerando lista de compras para o plano:', plan.name);
+      
+      // Extrair ingredientes de todas as receitas do plano
+      const ingredients: any[] = [];
+      const weeklyMenu = plan.meals?.weekly_menu || {};
+      
+      // Buscar receitas por ID e extrair ingredientes
+      for (const day of Object.values(weeklyMenu)) {
+        const dayMeals = day as any;
+        for (const mealType of ['breakfast', 'lunch', 'dinner', 'snack']) {
+          const recipeId = dayMeals[mealType];
+          if (recipeId) {
+            const recipe = recipes.find(r => r.id === recipeId);
+            if (recipe && recipe.ingredients) {
+              const recipeIngredients = Array.isArray(recipe.ingredients) 
+                ? recipe.ingredients 
+                : JSON.parse(recipe.ingredients || '[]');
+              ingredients.push(...recipeIngredients);
+            }
+          }
+        }
+      }
+
+      // Consolidar ingredientes por nome
+      const consolidatedIngredients = ingredients.reduce((acc, ingredient) => {
+        const name = ingredient.name || 'Ingrediente';
+        if (acc[name]) {
+          acc[name].amount += ingredient.amount || 0;
+        } else {
+          acc[name] = {
+            name,
+            amount: ingredient.amount || 0,
+            unit: ingredient.unit || '',
+            category: 'Geral',
+            checked: false
+          };
+        }
+        return acc;
+      }, {});
+
+      const shoppingListData = {
+        name: `Lista de Compras - ${plan.name}`,
+        meal_plan_id: plan.id,
+        items: Object.values(consolidatedIngredients),
+        total_estimated_cost: 0,
+        status: 'draft'
+      };
+
+      const { data, error } = await createShoppingList(userProfile.id, shoppingListData);
+      
+      if (data && !error) {
+        console.log('✅ Lista de compras criada com sucesso');
+        alert('Lista de compras gerada com sucesso!');
+      } else {
+        console.error('❌ Erro ao criar lista de compras:', error);
+        alert('Erro ao gerar lista de compras. Tente novamente.');
+      }
+    } catch (error) {
+      console.error('❌ Erro inesperado ao gerar lista:', error);
+      alert('Erro inesperado. Tente novamente.');
+    } finally {
+      setGeneratingList(false);
+    }
+  };
+
+  // Calcular estatísticas reais
+  const calculateStats = () => {
+    const totalMeals = mealPlans.reduce((total, plan) => total + (plan.meals?.totalMeals || 0), 0);
+    const avgTime = recipes.length > 0 ? Math.round(recipes.reduce((total, recipe) => total + (recipe.prep_time || 0), 0) / recipes.length) : 0;
+    const avgCalories = Math.round(1500 + (mealPlans.length * 50)); // Estimativa baseada nos planos
+    
+    return {
+      totalMeals,
+      avgTime,
+      avgCalories
+    };
+  };
+
+  const stats = calculateStats();
 
   const weeklyMenu = {
     'Segunda-feira': {
@@ -239,9 +338,7 @@ const MealPlansPage: React.FC = () => {
               <ChefHat className="w-6 h-6 text-blue-600" />
             </div>
             <h3 className="font-semibold text-dark-800">Receitas</h3>
-            <p className="text-2xl font-bold text-blue-600">
-              {mealPlans.reduce((total, plan) => total + (plan.meals?.totalMeals || 0), 0)}
-            </p>
+            <p className="text-2xl font-bold text-blue-600">{stats.totalMeals}</p>
           </Card>
 
           <Card className="text-center">
@@ -249,7 +346,7 @@ const MealPlansPage: React.FC = () => {
               <Target className="w-6 h-6 text-green-600" />
             </div>
             <h3 className="font-semibold text-dark-800">Meta Diária</h3>
-            <p className="text-2xl font-bold text-green-600">1600</p>
+            <p className="text-2xl font-bold text-green-600">{stats.avgCalories}</p>
             <p className="text-sm text-neutral-600">kcal</p>
           </Card>
 
@@ -258,7 +355,7 @@ const MealPlansPage: React.FC = () => {
               <Clock className="w-6 h-6 text-yellow-600" />
             </div>
             <h3 className="font-semibold text-dark-800">Tempo Médio</h3>
-            <p className="text-2xl font-bold text-yellow-600">25</p>
+            <p className="text-2xl font-bold text-yellow-600">{stats.avgTime}</p>
             <p className="text-sm text-neutral-600">min</p>
           </Card>
         </motion.div>
@@ -345,14 +442,26 @@ const MealPlansPage: React.FC = () => {
                       >
                         {selectedPlan === plan.id ? 'Plano Ativo' : 'Iniciar Plano'}
                       </Button>
-                      <Button
-                        fullWidth
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleViewPlan(plan)}
-                      >
-                        Ver Detalhes
-                      </Button>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Button
+                          fullWidth
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleViewPlan(plan)}
+                        >
+                          Ver Detalhes
+                        </Button>
+                        <Button
+                          fullWidth
+                          variant="ghost"
+                          size="sm"
+                          icon={ShoppingCart}
+                          loading={generatingList}
+                          onClick={() => handleGenerateShoppingList(plan)}
+                        >
+                          Lista
+                        </Button>
+                      </div>
                     </div>
                   </Card>
                 </motion.div>
@@ -564,16 +673,27 @@ const MealPlansPage: React.FC = () => {
               </div>
             </div>
 
-            <Button
-              fullWidth
-              variant="primary"
-              onClick={() => {
-                setSelectedPlan(selectedPlanDetails.id);
-                setShowPlanModal(false);
-              }}
-            >
-              Ativar Este Plano
-            </Button>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Button
+                fullWidth
+                variant="primary"
+                onClick={() => {
+                  setSelectedPlan(selectedPlanDetails.id);
+                  setShowPlanModal(false);
+                }}
+              >
+                Ativar Este Plano
+              </Button>
+              <Button
+                fullWidth
+                variant="outline"
+                icon={ShoppingCart}
+                loading={generatingList}
+                onClick={() => handleGenerateShoppingList(selectedPlanDetails)}
+              >
+                Gerar Lista de Compras
+              </Button>
+            </div>
           </div>
         )}
       </Modal>

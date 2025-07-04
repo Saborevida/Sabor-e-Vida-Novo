@@ -5,6 +5,7 @@ import { getGlossary } from '../lib/supabase';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
+import Modal from '../components/ui/Modal';
 
 const GlossaryPage: React.FC = () => {
   const [terms, setTerms] = useState<any[]>([]);
@@ -14,6 +15,8 @@ const GlossaryPage: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedDifficulty, setSelectedDifficulty] = useState('all');
   const [dataSource, setDataSource] = useState<'supabase' | 'example'>('supabase');
+  const [selectedTerm, setSelectedTerm] = useState<any>(null);
+  const [showTermModal, setShowTermModal] = useState(false);
 
   const categories = [
     { value: 'all', label: 'Todas as Categorias' },
@@ -98,6 +101,11 @@ const GlossaryPage: React.FC = () => {
     }
 
     setFilteredTerms(filtered);
+  };
+
+  const handleTermClick = (term: any) => {
+    setSelectedTerm(term);
+    setShowTermModal(true);
   };
 
   const getDifficultyColor = (difficulty: string) => {
@@ -299,7 +307,7 @@ const GlossaryPage: React.FC = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 * index }}
               >
-                <Card hover className="h-full">
+                <Card hover className="h-full cursor-pointer" onClick={() => handleTermClick(term)}>
                   <div className="flex items-center justify-between mb-3">
                     <span className="px-2 py-1 bg-primary-100 text-primary-700 text-xs rounded-full">
                       {getCategoryText(term.category)}
@@ -403,6 +411,90 @@ const GlossaryPage: React.FC = () => {
           </motion.div>
         )}
       </div>
+
+      {/* Term Details Modal */}
+      <Modal
+        isOpen={showTermModal}
+        onClose={() => setShowTermModal(false)}
+        title={selectedTerm?.term}
+        size="lg"
+      >
+        {selectedTerm && (
+          <div className="space-y-6">
+            {/* Term Meta */}
+            <div className="flex items-center justify-between">
+              <span className="px-3 py-1 bg-primary-100 text-primary-700 text-sm rounded-full">
+                {getCategoryText(selectedTerm.category)}
+              </span>
+              <span className={`px-3 py-1 text-sm rounded-full ${getDifficultyColor(selectedTerm.difficulty_level)}`}>
+                {selectedTerm.difficulty_level}
+              </span>
+            </div>
+
+            {/* Definition */}
+            <div>
+              <h3 className="text-lg font-semibold text-dark-800 mb-3">Definição</h3>
+              <p className="text-neutral-700 leading-relaxed">{selectedTerm.definition}</p>
+            </div>
+
+            {/* Synonyms */}
+            {selectedTerm.synonyms && selectedTerm.synonyms.length > 0 && (
+              <div>
+                <h3 className="text-lg font-semibold text-dark-800 mb-3">Sinônimos</h3>
+                <div className="flex flex-wrap gap-2">
+                  {selectedTerm.synonyms.map((synonym: string, index: number) => (
+                    <span
+                      key={index}
+                      className="px-3 py-1 bg-neutral-100 text-neutral-700 text-sm rounded-full"
+                    >
+                      {synonym}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Examples */}
+            {selectedTerm.examples && selectedTerm.examples.length > 0 && (
+              <div>
+                <h3 className="text-lg font-semibold text-dark-800 mb-3">Exemplos</h3>
+                <ul className="space-y-2">
+                  {selectedTerm.examples.map((example: string, index: number) => (
+                    <li key={index} className="flex items-start">
+                      <span className="text-primary-500 mr-2 mt-1">•</span>
+                      <span className="text-neutral-700">{example}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Related Terms */}
+            {selectedTerm.related_terms && selectedTerm.related_terms.length > 0 && (
+              <div>
+                <h3 className="text-lg font-semibold text-dark-800 mb-3">Termos Relacionados</h3>
+                <div className="flex flex-wrap gap-2">
+                  {selectedTerm.related_terms.map((relatedTerm: string, index: number) => (
+                    <span
+                      key={index}
+                      className="px-3 py-1 bg-blue-100 text-blue-700 text-sm rounded-full cursor-pointer hover:bg-blue-200 transition-colors"
+                      onClick={() => {
+                        // Buscar termo relacionado
+                        const relatedTermData = terms.find(t => t.term.toLowerCase() === relatedTerm.toLowerCase());
+                        if (relatedTermData) {
+                          setSelectedTerm(relatedTermData);
+                        }
+                      }}
+                    >
+                      {relatedTerm}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </Modal>
     </div>
   );
 };

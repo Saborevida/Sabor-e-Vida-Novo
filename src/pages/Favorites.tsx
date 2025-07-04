@@ -34,6 +34,7 @@ const FavoritesPage: React.FC = () => {
   }, [user]);
 
   useEffect(() => {
+    console.log('🔍 Aplicando filtros nos favoritos:', { searchTerm, selectedCategory });
     filterFavorites();
   }, [favorites, searchTerm, selectedCategory]);
 
@@ -45,7 +46,6 @@ const FavoritesPage: React.FC = () => {
       const { data, error } = await getFavorites(user.id);
       
       if (data && !error) {
-        // Converter e validar dados dos favoritos
         const favoriteRecipes = data
           .map(fav => fav.recipes)
           .filter(Boolean)
@@ -53,8 +53,8 @@ const FavoritesPage: React.FC = () => {
             id: recipe.id,
             name: recipe.name || 'Receita sem nome',
             category: recipe.category || 'other',
-            ingredients: recipe.ingredients || [],
-            instructions: recipe.instructions || [],
+            ingredients: Array.isArray(recipe.ingredients) ? recipe.ingredients : [],
+            instructions: Array.isArray(recipe.instructions) ? recipe.instructions : [],
             nutritionInfo: {
               calories: recipe.nutrition_info?.calories || 0,
               carbohydrates: recipe.nutrition_info?.carbohydrates || 0,
@@ -67,7 +67,7 @@ const FavoritesPage: React.FC = () => {
             },
             prepTime: recipe.prep_time || 0,
             difficulty: recipe.difficulty || 'easy',
-            tags: recipe.tags || [],
+            tags: Array.isArray(recipe.tags) ? recipe.tags : [],
             imageUrl: recipe.image_url || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
             createdAt: new Date(recipe.created_at || Date.now()),
             updatedAt: new Date(recipe.updated_at || Date.now())
@@ -88,19 +88,23 @@ const FavoritesPage: React.FC = () => {
   };
 
   const filterFavorites = () => {
-    let filtered = favorites;
+    let filtered = [...favorites];
+
+    console.log('🔍 Iniciando filtros com', filtered.length, 'favoritos');
 
     // Filter by search term
-    if (searchTerm) {
+    if (searchTerm.trim()) {
       filtered = filtered.filter(recipe =>
         recipe.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         recipe.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
       );
+      console.log('📝 Após filtro de busca:', filtered.length, 'favoritos');
     }
 
     // Filter by category
     if (selectedCategory !== 'all') {
       filtered = filtered.filter(recipe => recipe.category === selectedCategory);
+      console.log('📂 Após filtro de categoria:', filtered.length, 'favoritos');
     }
 
     setFilteredFavorites(filtered);
@@ -108,6 +112,12 @@ const FavoritesPage: React.FC = () => {
 
   const handleFavoriteChange = () => {
     fetchFavorites();
+  };
+
+  const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newCategory = e.target.value;
+    console.log('📂 Mudando categoria para:', newCategory);
+    setSelectedCategory(newCategory);
   };
 
   // Função para calcular estatísticas com validação
@@ -240,7 +250,7 @@ const FavoritesPage: React.FC = () => {
                     </label>
                     <select
                       value={selectedCategory}
-                      onChange={(e) => setSelectedCategory(e.target.value)}
+                      onChange={handleCategoryChange}
                       className="block w-full px-3 py-2.5 text-base border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     >
                       {categories.map((category) => (

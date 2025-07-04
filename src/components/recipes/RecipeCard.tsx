@@ -13,6 +13,7 @@ interface RecipeCardProps {
   isFavorite?: boolean;
   onFavoriteChange?: () => void;
   onClick?: () => void;
+  onTagClick?: (tag: string) => void;
 }
 
 const RecipeCard: React.FC<RecipeCardProps> = ({
@@ -20,9 +21,11 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
   isFavorite = false,
   onFavoriteChange,
   onClick,
+  onTagClick,
 }) => {
   const [isTogglingFavorite, setIsTogglingFavorite] = useState(false);
   const [showRecipeModal, setShowRecipeModal] = useState(false);
+  const [localIsFavorite, setLocalIsFavorite] = useState(isFavorite);
   const { user } = useAuth();
 
   const getDifficultyColor = (difficulty: string) => {
@@ -61,10 +64,12 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
 
     setIsTogglingFavorite(true);
     try {
-      if (isFavorite) {
+      if (localIsFavorite) {
         await removeFromFavorites(user.id, recipe.id);
+        setLocalIsFavorite(false);
       } else {
         await addToFavorites(user.id, recipe.id);
+        setLocalIsFavorite(true);
       }
       onFavoriteChange?.();
     } catch (error) {
@@ -82,7 +87,14 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
     }
   };
 
-  // Garantir que nutritionInfo existe
+  const handleTagClick = (e: React.MouseEvent, tag: string) => {
+    e.stopPropagation();
+    if (onTagClick) {
+      onTagClick(tag);
+    }
+  };
+
+  // Garantir que nutritionInfo existe com valores padrão
   const nutrition = recipe.nutritionInfo || {
     calories: 0,
     carbohydrates: 0,
@@ -93,6 +105,9 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
     glycemicIndex: 0,
     servings: 1
   };
+
+  // Garantir que ingredients existe e formatar corretamente
+  const ingredients = Array.isArray(recipe.ingredients) ? recipe.ingredients : [];
 
   return (
     <>
@@ -114,7 +129,7 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
               <Heart
                 size={20}
                 className={`${
-                  isFavorite ? 'text-red-500 fill-current' : 'text-neutral-400'
+                  localIsFavorite ? 'text-red-500 fill-current' : 'text-neutral-400'
                 } ${isTogglingFavorite ? 'animate-pulse' : ''}`}
               />
             </button>
@@ -174,12 +189,13 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
 
           <div className="flex flex-wrap gap-1 mb-4">
             {recipe.tags.slice(0, 3).map((tag, index) => (
-              <span
+              <button
                 key={index}
-                className="px-2 py-1 bg-neutral-100 text-neutral-600 text-xs rounded-full"
+                onClick={(e) => handleTagClick(e, tag)}
+                className="px-2 py-1 bg-neutral-100 text-neutral-600 text-xs rounded-full hover:bg-primary-100 hover:text-primary-700 transition-colors duration-200"
               >
                 {tag}
-              </span>
+              </button>
             ))}
           </div>
 
@@ -250,12 +266,22 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
           <div>
             <h3 className="text-lg font-semibold text-dark-800 mb-3">Ingredientes</h3>
             <ul className="space-y-2">
-              {recipe.ingredients.map((ingredient, index) => (
-                <li key={index} className="flex items-center">
-                  <span className="w-2 h-2 bg-primary-500 rounded-full mr-3"></span>
-                  <span>{ingredient.amount} {ingredient.unit} de {ingredient.name}</span>
-                </li>
-              ))}
+              {ingredients.length > 0 ? (
+                ingredients.map((ingredient, index) => (
+                  <li key={index} className="flex items-center">
+                    <span className="w-2 h-2 bg-primary-500 rounded-full mr-3"></span>
+                    <span>
+                      {typeof ingredient === 'object' && ingredient !== null ? (
+                        `${ingredient.amount || ''} ${ingredient.unit || ''} de ${ingredient.name || 'Ingrediente'}`
+                      ) : (
+                        ingredient
+                      )}
+                    </span>
+                  </li>
+                ))
+              ) : (
+                <li className="text-neutral-500 italic">Ingredientes não disponíveis</li>
+              )}
             </ul>
           </div>
 
@@ -263,29 +289,34 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
           <div>
             <h3 className="text-lg font-semibold text-dark-800 mb-3">Modo de Preparo</h3>
             <ol className="space-y-3">
-              {recipe.instructions.map((instruction, index) => (
-                <li key={index} className="flex">
-                  <span className="flex-shrink-0 w-6 h-6 bg-primary-500 text-white text-sm font-bold rounded-full flex items-center justify-center mr-3 mt-0.5">
-                    {index + 1}
-                  </span>
-                  <span>{instruction}</span>
-                </li>
-              ))}
+              {recipe.instructions && recipe.instructions.length > 0 ? (
+                recipe.instructions.map((instruction, index) => (
+                  <li key={index} className="flex">
+                    <span className="flex-shrink-0 w-6 h-6 bg-primary-500 text-white text-sm font-bold rounded-full flex items-center justify-center mr-3 mt-0.5">
+                      {index + 1}
+                    </span>
+                    <span>{instruction}</span>
+                  </li>
+                ))
+              ) : (
+                <li className="text-neutral-500 italic">Instruções não disponíveis</li>
+              )}
             </ol>
           </div>
 
           {/* Tags */}
-          {recipe.tags.length > 0 && (
+          {recipe.tags && recipe.tags.length > 0 && (
             <div>
               <h3 className="text-lg font-semibold text-dark-800 mb-3">Tags</h3>
               <div className="flex flex-wrap gap-2">
                 {recipe.tags.map((tag, index) => (
-                  <span
+                  <button
                     key={index}
-                    className="px-3 py-1 bg-primary-100 text-primary-700 text-sm rounded-full"
+                    onClick={() => onTagClick && onTagClick(tag)}
+                    className="px-3 py-1 bg-primary-100 text-primary-700 text-sm rounded-full hover:bg-primary-200 transition-colors duration-200"
                   >
                     {tag}
-                  </span>
+                  </button>
                 ))}
               </div>
             </div>

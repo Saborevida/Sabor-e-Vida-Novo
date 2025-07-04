@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { User, Mail, Calendar, Heart, Settings, Shield, Bell, Eye } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { upsertUserProfile } from '../lib/supabase';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
@@ -10,6 +11,14 @@ const ProfilePage: React.FC = () => {
   const { userProfile, user } = useAuth();
   const [activeTab, setActiveTab] = useState('profile');
   const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    name: userProfile?.name || '',
+    dateOfBirth: userProfile?.dateOfBirth ? userProfile.dateOfBirth.toISOString().split('T')[0] : '',
+    diabetesType: userProfile?.diabetesType || 'type2',
+    healthGoals: userProfile?.healthGoals || [],
+    dietaryPreferences: userProfile?.dietaryPreferences || []
+  });
 
   const tabs = [
     { id: 'profile', label: 'Perfil', icon: User },
@@ -39,6 +48,56 @@ const ProfilePage: React.FC = () => {
     'Cetogênica'
   ];
 
+  const handleInputChange = (field: string, value: any) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleArrayToggle = (field: 'healthGoals' | 'dietaryPreferences', value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: prev[field].includes(value)
+        ? prev[field].filter(item => item !== value)
+        : [...prev[field], value]
+    }));
+  };
+
+  const handleSaveProfile = async () => {
+    if (!user) return;
+
+    setLoading(true);
+    try {
+      const profileData = {
+        name: formData.name,
+        date_of_birth: formData.dateOfBirth || null,
+        diabetes_type: formData.diabetesType,
+        health_goals: formData.healthGoals,
+        dietary_preferences: formData.dietaryPreferences,
+        email: user.email || ''
+      };
+
+      const { error } = await upsertUserProfile(user.id, profileData);
+      
+      if (error) {
+        console.error('Erro ao salvar perfil:', error);
+        alert('Erro ao salvar perfil. Tente novamente.');
+      } else {
+        console.log('✅ Perfil salvo com sucesso');
+        setIsEditing(false);
+        alert('Perfil atualizado com sucesso!');
+        // Recarregar a página para atualizar os dados
+        window.location.reload();
+      }
+    } catch (error) {
+      console.error('Erro inesperado:', error);
+      alert('Erro inesperado. Tente novamente.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const renderProfileTab = () => (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -46,7 +105,19 @@ const ProfilePage: React.FC = () => {
         <Button
           variant="outline"
           size="sm"
-          onClick={() => setIsEditing(!isEditing)}
+          onClick={() => {
+            if (isEditing) {
+              // Reset form data when canceling
+              setFormData({
+                name: userProfile?.name || '',
+                dateOfBirth: userProfile?.dateOfBirth ? userProfile.dateOfBirth.toISOString().split('T')[0] : '',
+                diabetesType: userProfile?.diabetesType || 'type2',
+                healthGoals: userProfile?.healthGoals || [],
+                dietaryPreferences: userProfile?.dietaryPreferences || []
+              });
+            }
+            setIsEditing(!isEditing);
+          }}
         >
           {isEditing ? 'Cancelar' : 'Editar'}
         </Button>
@@ -56,7 +127,8 @@ const ProfilePage: React.FC = () => {
         <Input
           label="Nome completo"
           type="text"
-          value={userProfile?.name || ''}
+          value={formData.name}
+          onChange={(e) => handleInputChange('name', e.target.value)}
           disabled={!isEditing}
           placeholder="Seu nome completo"
         />
@@ -72,7 +144,8 @@ const ProfilePage: React.FC = () => {
         <Input
           label="Data de nascimento"
           type="date"
-          value={userProfile?.dateOfBirth ? userProfile.dateOfBirth.toISOString().split('T')[0] : ''}
+          value={formData.dateOfBirth}
+          onChange={(e) => handleInputChange('dateOfBirth', e.target.value)}
           disabled={!isEditing}
           icon={Calendar}
         />
@@ -83,8 +156,9 @@ const ProfilePage: React.FC = () => {
           </label>
           <select
             disabled={!isEditing}
-            className="block w-full px-3 py-2.5 text-base border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:bg-neutral-50"
-            value={userProfile?.diabetesType || 'type2'}
+            value={formData.diabetesType}
+            onChange={(e) => handleInputChange('diabetesType', e.target.value)}
+            className="block w-full px-3 py-2.5 text-base border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:bg-neutral-50 disabled:text-neutral-500"
           >
             <option value="type1">Tipo 1</option>
             <option value="type2">Tipo 2</option>
@@ -96,10 +170,26 @@ const ProfilePage: React.FC = () => {
 
       {isEditing && (
         <div className="flex space-x-4">
-          <Button variant="primary">
-            Salvar Alterações
+          <Button 
+            variant="primary" 
+            loading={loading}
+            onClick={handleSaveProfile}
+          >
+            {loading ? 'Salvando...' : 'Salvar Alterações'}
           </Button>
-          <Button variant="outline" onClick={() => setIsEditing(false)}>
+          <Button 
+            variant="outline" 
+            onClick={() => {
+              setFormData({
+                name: userProfile?.name || '',
+                dateOfBirth: userProfile?.dateOfBirth ? userProfile.dateOfBirth.toISOString().split('T')[0] : '',
+                diabetesType: userProfile?.diabetesType || 'type2',
+                healthGoals: userProfile?.healthGoals || [],
+                dietaryPreferences: userProfile?.dietaryPreferences || []
+              });
+              setIsEditing(false);
+            }}
+          >
             Cancelar
           </Button>
         </div>
@@ -109,7 +199,16 @@ const ProfilePage: React.FC = () => {
 
   const renderHealthTab = () => (
     <div className="space-y-6">
-      <h3 className="text-lg font-semibold text-dark-800">Objetivos de Saúde</h3>
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold text-dark-800">Objetivos de Saúde</h3>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setIsEditing(!isEditing)}
+        >
+          {isEditing ? 'Cancelar' : 'Editar'}
+        </Button>
+      </div>
       
       <div>
         <label className="block text-sm font-medium text-dark-700 mb-3">
@@ -120,8 +219,10 @@ const ProfilePage: React.FC = () => {
             <label key={goal} className="flex items-center">
               <input
                 type="checkbox"
-                className="w-4 h-4 text-primary-600 border-neutral-300 rounded focus:ring-primary-500"
-                defaultChecked={userProfile?.healthGoals?.includes(goal)}
+                className="w-4 h-4 text-primary-600 border-neutral-300 rounded focus:ring-primary-500 disabled:opacity-50"
+                checked={formData.healthGoals.includes(goal)}
+                onChange={() => handleArrayToggle('healthGoals', goal)}
+                disabled={!isEditing}
               />
               <span className="ml-2 text-sm text-dark-700">{goal}</span>
             </label>
@@ -129,36 +230,30 @@ const ProfilePage: React.FC = () => {
         </div>
       </div>
 
-      <div>
-        <h4 className="font-medium text-dark-800 mb-3">Métricas de Saúde</h4>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Input
-            label="Peso atual (kg)"
-            type="number"
-            placeholder="70"
-          />
-          <Input
-            label="Altura (cm)"
-            type="number"
-            placeholder="170"
-          />
-          <Input
-            label="Meta de peso (kg)"
-            type="number"
-            placeholder="65"
-          />
-        </div>
-      </div>
-
-      <Button variant="primary">
-        Salvar Objetivos
-      </Button>
+      {isEditing && (
+        <Button 
+          variant="primary" 
+          loading={loading}
+          onClick={handleSaveProfile}
+        >
+          {loading ? 'Salvando...' : 'Salvar Objetivos'}
+        </Button>
+      )}
     </div>
   );
 
   const renderPreferencesTab = () => (
     <div className="space-y-6">
-      <h3 className="text-lg font-semibold text-dark-800">Preferências Alimentares</h3>
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold text-dark-800">Preferências Alimentares</h3>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setIsEditing(!isEditing)}
+        >
+          {isEditing ? 'Cancelar' : 'Editar'}
+        </Button>
+      </div>
       
       <div>
         <label className="block text-sm font-medium text-dark-700 mb-3">
@@ -169,8 +264,10 @@ const ProfilePage: React.FC = () => {
             <label key={preference} className="flex items-center">
               <input
                 type="checkbox"
-                className="w-4 h-4 text-primary-600 border-neutral-300 rounded focus:ring-primary-500"
-                defaultChecked={userProfile?.dietaryPreferences?.includes(preference)}
+                className="w-4 h-4 text-primary-600 border-neutral-300 rounded focus:ring-primary-500 disabled:opacity-50"
+                checked={formData.dietaryPreferences.includes(preference)}
+                onChange={() => handleArrayToggle('dietaryPreferences', preference)}
+                disabled={!isEditing}
               />
               <span className="ml-2 text-sm text-dark-700">{preference}</span>
             </label>
@@ -178,38 +275,15 @@ const ProfilePage: React.FC = () => {
         </div>
       </div>
 
-      <div>
-        <h4 className="font-medium text-dark-800 mb-3">Configurações de Receitas</h4>
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium text-dark-700">Mostrar apenas receitas de baixo IG</p>
-              <p className="text-sm text-neutral-600">Exibir apenas receitas com índice glicêmico baixo</p>
-            </div>
-            <input
-              type="checkbox"
-              className="w-4 h-4 text-primary-600 border-neutral-300 rounded focus:ring-primary-500"
-              defaultChecked={true}
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium text-dark-700">Sugestões personalizadas</p>
-              <p className="text-sm text-neutral-600">Receber recomendações baseadas no seu perfil</p>
-            </div>
-            <input
-              type="checkbox"
-              className="w-4 h-4 text-primary-600 border-neutral-300 rounded focus:ring-primary-500"
-              defaultChecked={true}
-            />
-          </div>
-        </div>
-      </div>
-
-      <Button variant="primary">
-        Salvar Preferências
-      </Button>
+      {isEditing && (
+        <Button 
+          variant="primary" 
+          loading={loading}
+          onClick={handleSaveProfile}
+        >
+          {loading ? 'Salvando...' : 'Salvar Preferências'}
+        </Button>
+      )}
     </div>
   );
 

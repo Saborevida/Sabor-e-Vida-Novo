@@ -95,7 +95,7 @@ const PricingPage: React.FC = () => {
               >
                 Anual
                 <span className="ml-1 text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
-                  Economize 33%
+                  Economize 17%
                 </span>
               </button>
             </div>
@@ -190,7 +190,7 @@ const PricingPage: React.FC = () => {
                   </div>
                   {product.interval === 'year' && (
                     <div className="text-sm text-green-600 font-medium mb-2">
-                      Equivale a R$ 13,25/mês
+                      Equivale a R$ 8,32/mês
                     </div>
                   )}
                   <p className="text-neutral-600">
@@ -219,7 +219,7 @@ const PricingPage: React.FC = () => {
 
                 {product.interval === 'year' && (
                   <p className="text-center text-sm text-neutral-500 mt-3">
-                    💰 Economize R$ 79,80 por ano
+                    💰 Economize R$ 19,90 por ano
                   </p>
                 )}
               </Card>

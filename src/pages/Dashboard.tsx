@@ -11,7 +11,7 @@ import {
   ChefHat
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { getRecipes, getFavorites } from '../lib/supabase';
+import { getRecipes, getFavorites, getMealPlans } from '../lib/supabase';
 import { Recipe } from '../types';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
@@ -21,6 +21,7 @@ const Dashboard: React.FC = () => {
   const { userProfile } = useAuth();
   const [recentRecipes, setRecentRecipes] = useState<Recipe[]>([]);
   const [favoriteRecipes, setFavoriteRecipes] = useState<Recipe[]>([]);
+  const [mealPlansCount, setMealPlansCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [dataSource, setDataSource] = useState<'supabase' | 'example'>('supabase');
 
@@ -59,9 +60,10 @@ const Dashboard: React.FC = () => {
             id: recipe.id,
             name: recipe.name,
             category: recipe.category,
-            ingredients: recipe.ingredients || [],
+            ingredients: Array.isArray(recipe.ingredients) ? recipe.ingredients : 
+                        typeof recipe.ingredients === 'string' ? JSON.parse(recipe.ingredients) : [],
             instructions: recipe.instructions || [],
-            nutritionInfo: recipe.nutrition_info || {
+            nutritionInfo: typeof recipe.nutrition_info === 'object' ? recipe.nutrition_info : {
               calories: 0,
               carbohydrates: 0,
               protein: 0,
@@ -103,9 +105,10 @@ const Dashboard: React.FC = () => {
                     id: recipe.id,
                     name: recipe.name,
                     category: recipe.category,
-                    ingredients: recipe.ingredients || [],
+                    ingredients: Array.isArray(recipe.ingredients) ? recipe.ingredients : 
+                                typeof recipe.ingredients === 'string' ? JSON.parse(recipe.ingredients) : [],
                     instructions: recipe.instructions || [],
-                    nutritionInfo: recipe.nutrition_info || {
+                    nutritionInfo: typeof recipe.nutrition_info === 'object' ? recipe.nutrition_info : {
                       calories: 0,
                       carbohydrates: 0,
                       protein: 0,
@@ -134,6 +137,21 @@ const Dashboard: React.FC = () => {
             setFavoriteRecipes([]);
           }
         }
+
+        // Buscar planos de refeição
+        try {
+          const { data: mealPlans, error: mealPlansError } = await getMealPlans(userProfile.id);
+          if (mealPlans && !mealPlansError) {
+            console.log('✅ Planos carregados:', mealPlans.length);
+            setMealPlansCount(mealPlans.length);
+          } else {
+            console.log('ℹ️ Nenhum plano encontrado');
+            setMealPlansCount(0);
+          }
+        } catch (planError) {
+          console.log('⚠️ Erro ao carregar planos (continuando):', planError);
+          setMealPlansCount(0);
+        }
       } catch (error) {
         console.error('❌ Erro ao carregar dados do dashboard:', error);
         setDataSource('example');
@@ -147,6 +165,22 @@ const Dashboard: React.FC = () => {
     fetchDashboardData();
   }, [userProfile]);
 
+  // Calcular pontuação de saúde baseada em dados reais
+  const calculateHealthScore = () => {
+    let score = 50; // Base score
+    
+    // Adicionar pontos por favoritos (máximo 20 pontos)
+    score += Math.min(favoriteRecipes.length * 2, 20);
+    
+    // Adicionar pontos por planos criados (máximo 15 pontos)
+    score += Math.min(mealPlansCount * 5, 15);
+    
+    // Adicionar pontos por receitas disponíveis (máximo 15 pontos)
+    score += Math.min(recentRecipes.length * 2, 15);
+    
+    return Math.min(score, 100);
+  };
+
   const stats = [
     {
       title: 'Receitas Favoritas',
@@ -157,7 +191,7 @@ const Dashboard: React.FC = () => {
     },
     {
       title: 'Planos Criados',
-      value: 0,
+      value: mealPlansCount,
       icon: Calendar,
       color: 'text-blue-500',
       bgColor: 'bg-blue-100',
@@ -171,7 +205,7 @@ const Dashboard: React.FC = () => {
     },
     {
       title: 'Pontuação Saúde',
-      value: 85,
+      value: calculateHealthScore(),
       icon: Star,
       color: 'text-yellow-500',
       bgColor: 'bg-yellow-100',
@@ -201,6 +235,14 @@ const Dashboard: React.FC = () => {
       href: '/education',
     },
   ];
+
+  const handleQuickAction = (href: string) => {
+    window.location.href = href;
+  };
+
+  const handleRecipeClick = (href: string) => {
+    window.location.href = href;
+  };
 
   if (loading) {
     return (
@@ -244,6 +286,7 @@ const Dashboard: React.FC = () => {
             <p><strong>👤 Usuário:</strong> {userProfile?.email}</p>
             <p><strong>🍽️ Receitas:</strong> {recentRecipes.length}</p>
             <p><strong>❤️ Favoritos:</strong> {favoriteRecipes.length}</p>
+            <p><strong>📅 Planos:</strong> {mealPlansCount}</p>
           </div>
         </motion.div>
 
@@ -293,7 +336,7 @@ const Dashboard: React.FC = () => {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {quickActions.map((action, index) => (
-              <Card key={index} hover className="text-center">
+              <Card key={index} hover className="text-center cursor-pointer" onClick={() => handleQuickAction(action.href)}>
                 <div className={`w-12 h-12 ${action.color} rounded-lg flex items-center justify-center mx-auto mb-4`}>
                   <action.icon className="w-6 h-6 text-white" />
                 </div>
@@ -318,14 +361,14 @@ const Dashboard: React.FC = () => {
               <h2 className="text-xl font-heading font-semibold text-dark-800">
                 Receitas Recentes
               </h2>
-              <Button variant="ghost" size="sm">
+              <Button variant="ghost" size="sm" onClick={() => handleRecipeClick('/recipes')}>
                 Ver Todas
               </Button>
             </div>
             <div className="space-y-4">
               {recentRecipes.length > 0 ? (
                 recentRecipes.map((recipe) => (
-                  <Card key={recipe.id} hover padding="sm">
+                  <Card key={recipe.id} hover padding="sm" className="cursor-pointer" onClick={() => handleRecipeClick('/recipes')}>
                     <div className="flex items-center space-x-4">
                       <img
                         src={recipe.imageUrl}
@@ -379,14 +422,14 @@ const Dashboard: React.FC = () => {
               <h2 className="text-xl font-heading font-semibold text-dark-800">
                 Seus Favoritos
               </h2>
-              <Button variant="ghost" size="sm">
+              <Button variant="ghost" size="sm" onClick={() => handleRecipeClick('/favorites')}>
                 Ver Todos
               </Button>
             </div>
             <div className="space-y-4">
               {favoriteRecipes.length > 0 ? (
                 favoriteRecipes.map((recipe) => (
-                  <Card key={recipe.id} hover padding="sm">
+                  <Card key={recipe.id} hover padding="sm" className="cursor-pointer" onClick={() => handleRecipeClick('/favorites')}>
                     <div className="flex items-center space-x-4">
                       <img
                         src={recipe.imageUrl}
@@ -415,7 +458,7 @@ const Dashboard: React.FC = () => {
                   <p className="text-neutral-600 mb-4">
                     Você ainda não tem receitas favoritas
                   </p>
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" onClick={() => handleRecipeClick('/recipes')}>
                     Explorar Receitas
                   </Button>
                 </Card>

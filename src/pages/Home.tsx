@@ -77,7 +77,7 @@ const Home: React.FC = () => {
     },
     {
       name: 'Premium',
-      price: 'R$ 19,90',
+      price: 'R$ 9,90',
       period: '/mês',
       features: [
         'Acesso completo a todas as receitas',

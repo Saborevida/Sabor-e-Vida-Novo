@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Search, Filter, Clock, Users, Star, ChefHat } from 'lucide-react';
-import { getRecipes } from '../lib/supabase';
+import { getRecipes, getFavorites } from '../lib/supabase';
+import { useAuth } from '../contexts/AuthContext';
 import { Recipe } from '../types';
 import RecipeCard from '../components/recipes/RecipeCard';
 import Card from '../components/ui/Card';
@@ -9,8 +10,10 @@ import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 
 const RecipesPage: React.FC = () => {
+  const { user } = useAuth();
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [filteredRecipes, setFilteredRecipes] = useState<Recipe[]>([]);
+  const [favoriteRecipeIds, setFavoriteRecipeIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -38,21 +41,24 @@ const RecipesPage: React.FC = () => {
   useEffect(() => {
     console.log('🍽️ Carregando página de receitas com timeout');
     fetchRecipes();
-  }, []);
+    if (user) {
+      fetchFavorites();
+    }
+  }, [user]);
 
   useEffect(() => {
+    console.log('🔍 Aplicando filtros:', { searchTerm, selectedCategory, selectedDifficulty, maxPrepTime });
     filterRecipes();
   }, [recipes, searchTerm, selectedCategory, selectedDifficulty, maxPrepTime]);
 
   const fetchRecipes = async () => {
-    // Timeout para carregamento
     const loadingTimeout = setTimeout(() => {
       if (loading) {
         console.log('⏰ Timeout no carregamento de receitas');
         setLoading(false);
         setDataSource('example');
       }
-    }, 10000); // 10 segundos máximo
+    }, 10000);
 
     try {
       console.log('📥 Buscando receitas com timeout...');
@@ -63,18 +69,17 @@ const RecipesPage: React.FC = () => {
       if (data && data.length > 0) {
         console.log('✅ Receitas carregadas:', data.length);
         
-        // Verificar se são dados reais ou de exemplo
         const isExample = data.some(recipe => recipe.id?.startsWith('example-'));
         setDataSource(isExample ? 'example' : 'supabase');
         
-        // Converter dados para o formato esperado
         const formattedRecipes: Recipe[] = data.map(recipe => ({
           id: recipe.id,
           name: recipe.name,
           category: recipe.category,
-          ingredients: recipe.ingredients || [],
-          instructions: recipe.instructions || [],
-          nutritionInfo: recipe.nutrition_info || {
+          ingredients: Array.isArray(recipe.ingredients) ? recipe.ingredients : 
+                      typeof recipe.ingredients === 'string' ? JSON.parse(recipe.ingredients) : [],
+          instructions: Array.isArray(recipe.instructions) ? recipe.instructions : [],
+          nutritionInfo: typeof recipe.nutrition_info === 'object' ? recipe.nutrition_info : {
             calories: 0,
             carbohydrates: 0,
             protein: 0,
@@ -86,7 +91,7 @@ const RecipesPage: React.FC = () => {
           },
           prepTime: recipe.prep_time || 0,
           difficulty: recipe.difficulty || 'easy',
-          tags: recipe.tags || [],
+          tags: Array.isArray(recipe.tags) ? recipe.tags : [],
           imageUrl: recipe.image_url || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
           createdAt: new Date(recipe.created_at),
           updatedAt: new Date(recipe.updated_at)
@@ -109,31 +114,72 @@ const RecipesPage: React.FC = () => {
     }
   };
 
+  const fetchFavorites = async () => {
+    if (!user) return;
+
+    try {
+      const { data } = await getFavorites(user.id);
+      if (data) {
+        const favoriteIds = new Set(data.map(fav => fav.recipes?.id).filter(Boolean));
+        setFavoriteRecipeIds(favoriteIds);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar favoritos:', error);
+    }
+  };
+
   const filterRecipes = () => {
-    let filtered = recipes;
+    let filtered = [...recipes];
+
+    console.log('🔍 Iniciando filtros com', filtered.length, 'receitas');
 
     // Filter by search term
-    if (searchTerm) {
+    if (searchTerm.trim()) {
       filtered = filtered.filter(recipe =>
         recipe.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         recipe.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
       );
+      console.log('📝 Após filtro de busca:', filtered.length, 'receitas');
     }
 
     // Filter by category
     if (selectedCategory !== 'all') {
       filtered = filtered.filter(recipe => recipe.category === selectedCategory);
+      console.log('📂 Após filtro de categoria:', filtered.length, 'receitas');
     }
 
     // Filter by difficulty
     if (selectedDifficulty !== 'all') {
       filtered = filtered.filter(recipe => recipe.difficulty === selectedDifficulty);
+      console.log('⚡ Após filtro de dificuldade:', filtered.length, 'receitas');
     }
 
     // Filter by prep time
     filtered = filtered.filter(recipe => recipe.prepTime <= maxPrepTime);
+    console.log('⏰ Após filtro de tempo:', filtered.length, 'receitas');
 
     setFilteredRecipes(filtered);
+  };
+
+  const handleFavoriteChange = () => {
+    fetchFavorites();
+  };
+
+  const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newCategory = e.target.value;
+    console.log('📂 Mudando categoria para:', newCategory);
+    setSelectedCategory(newCategory);
+  };
+
+  const handleDifficultyChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newDifficulty = e.target.value;
+    console.log('⚡ Mudando dificuldade para:', newDifficulty);
+    setSelectedDifficulty(newDifficulty);
+  };
+
+  const handleTagClick = (tag: string) => {
+    console.log('🏷️ Tag clicada:', tag);
+    setSearchTerm(tag);
   };
 
   if (loading) {
@@ -203,7 +249,7 @@ const RecipesPage: React.FC = () => {
                 </label>
                 <select
                   value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  onChange={handleCategoryChange}
                   className="block w-full px-3 py-2.5 text-base border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 >
                   {categories.map((category) => (
@@ -220,7 +266,7 @@ const RecipesPage: React.FC = () => {
                 </label>
                 <select
                   value={selectedDifficulty}
-                  onChange={(e) => setSelectedDifficulty(e.target.value)}
+                  onChange={handleDifficultyChange}
                   className="block w-full px-3 py-2.5 text-base border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 >
                   {difficulties.map((difficulty) => (
@@ -283,7 +329,12 @@ const RecipesPage: React.FC = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 * index }}
               >
-                <RecipeCard recipe={recipe} />
+                <RecipeCard 
+                  recipe={recipe} 
+                  isFavorite={favoriteRecipeIds.has(recipe.id)}
+                  onFavoriteChange={handleFavoriteChange}
+                  onTagClick={handleTagClick}
+                />
               </motion.div>
             ))}
           </motion.div>
@@ -300,7 +351,7 @@ const RecipesPage: React.FC = () => {
               </h3>
               <p className="text-neutral-600 mb-6">
                 {recipes.length === 0 
-                  ? 'Adicione receitas ao seu banco Supabase ou verifique a conexão.'
+                  ? 'Execute a migração do banco de dados para adicionar receitas.'
                   : 'Tente ajustar os filtros para encontrar mais receitas.'
                 }
               </p>

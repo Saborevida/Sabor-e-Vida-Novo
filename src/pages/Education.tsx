@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { BookOpen, Search, Filter, Clock, Star, Users, TrendingUp } from 'lucide-react';
+import { BookOpen, Search, Filter, Clock, Star, Users, TrendingUp, ExternalLink } from 'lucide-react';
 import { getEducationalContent, incrementArticleViews } from '../lib/supabase';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
@@ -36,14 +36,13 @@ const EducationPage: React.FC = () => {
   }, [articles, searchTerm, selectedCategory]);
 
   const fetchEducationalContent = async () => {
-    // Timeout para carregamento
     const loadingTimeout = setTimeout(() => {
       if (loading) {
         console.log('⏰ Timeout no carregamento de conteúdo educativo');
         setLoading(false);
         setDataSource('example');
       }
-    }, 10000); // 10 segundos máximo
+    }, 10000);
 
     try {
       console.log('📥 Buscando conteúdo educativo do Supabase...');
@@ -54,7 +53,6 @@ const EducationPage: React.FC = () => {
       if (data && data.length > 0) {
         console.log('✅ Conteúdo educativo carregado:', data.length);
         
-        // Verificar se são dados reais ou de exemplo
         const isExample = data.some(article => article.id?.length < 10);
         setDataSource(isExample ? 'example' : 'supabase');
         
@@ -99,8 +97,19 @@ const EducationPage: React.FC = () => {
     // Incrementar visualizações se for do Supabase
     if (dataSource === 'supabase' && article.id) {
       await incrementArticleViews(article.id);
+      // Atualizar o contador local
+      setArticles(prev => prev.map(a => 
+        a.id === article.id ? { ...a, views: (a.views || 0) + 1 } : a
+      ));
     }
     
+    // Se tem URL externa, abrir em nova aba
+    if (article.external_url) {
+      window.open(article.external_url, '_blank', 'noopener,noreferrer');
+      return;
+    }
+    
+    // Caso contrário, abrir modal interno
     setSelectedArticle(article);
     setShowArticleModal(true);
   };
@@ -124,6 +133,21 @@ const EducationPage: React.FC = () => {
     };
     return categoryMap[category as keyof typeof categoryMap] || category;
   };
+
+  // Calcular estatísticas reais
+  const calculateStats = () => {
+    const totalViews = articles.reduce((total, article) => total + (article.views || 0), 0);
+    const avgRating = articles.length > 0 
+      ? (articles.reduce((total, article) => total + (article.rating || 0), 0) / articles.length).toFixed(1)
+      : '0.0';
+    
+    return {
+      totalViews,
+      avgRating: parseFloat(avgRating)
+    };
+  };
+
+  const stats = calculateStats();
 
   if (loading) {
     return (
@@ -188,9 +212,7 @@ const EducationPage: React.FC = () => {
               <Users className="w-6 h-6 text-blue-600" />
             </div>
             <h3 className="font-semibold text-dark-800">Visualizações</h3>
-            <p className="text-2xl font-bold text-blue-600">
-              {articles.reduce((total, article) => total + (article.views || 0), 0)}
-            </p>
+            <p className="text-2xl font-bold text-blue-600">{stats.totalViews}</p>
           </Card>
 
           <Card className="text-center">
@@ -198,12 +220,7 @@ const EducationPage: React.FC = () => {
               <Star className="w-6 h-6 text-green-600" />
             </div>
             <h3 className="font-semibold text-dark-800">Avaliação</h3>
-            <p className="text-2xl font-bold text-green-600">
-              {articles.length > 0 
-                ? (articles.reduce((total, article) => total + (article.rating || 0), 0) / articles.length).toFixed(1)
-                : '0.0'
-              }
-            </p>
+            <p className="text-2xl font-bold text-green-600">{stats.avgRating}</p>
           </Card>
 
           <Card className="text-center">
@@ -320,11 +337,11 @@ const EducationPage: React.FC = () => {
                       </div>
                       <div className="flex items-center space-x-1">
                         <Users size={14} />
-                        <span>{article.views}</span>
+                        <span>{article.views || 0}</span>
                       </div>
                       <div className="flex items-center space-x-1">
                         <Star size={14} className="text-yellow-500" />
-                        <span>{article.rating}</span>
+                        <span>{article.rating || 0}</span>
                       </div>
                     </div>
                   </div>
@@ -341,7 +358,14 @@ const EducationPage: React.FC = () => {
                   </div>
 
                   <Button fullWidth variant="outline" size="sm">
-                    Ler Artigo
+                    {article.external_url ? (
+                      <div className="flex items-center justify-center">
+                        <span>Ler Artigo</span>
+                        <ExternalLink size={14} className="ml-1" />
+                      </div>
+                    ) : (
+                      'Ler Artigo'
+                    )}
                   </Button>
                 </Card>
               </motion.div>
@@ -405,11 +429,11 @@ const EducationPage: React.FC = () => {
                 </div>
                 <div className="flex items-center space-x-1">
                   <Users size={16} />
-                  <span>{selectedArticle.views} visualizações</span>
+                  <span>{selectedArticle.views || 0} visualizações</span>
                 </div>
                 <div className="flex items-center space-x-1">
                   <Star size={16} className="text-yellow-500" />
-                  <span>{selectedArticle.rating}</span>
+                  <span>{selectedArticle.rating || 0}</span>
                 </div>
               </div>
               <span className={`px-3 py-1 text-sm rounded-full ${getDifficultyColor(selectedArticle.difficulty)}`}>

@@ -5,6 +5,7 @@ import { getNutritionFacts } from '../lib/supabase';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
+import Modal from '../components/ui/Modal';
 
 const NutritionTablePage: React.FC = () => {
   const [foods, setFoods] = useState<any[]>([]);
@@ -13,6 +14,8 @@ const NutritionTablePage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [dataSource, setDataSource] = useState<'supabase' | 'example'>('supabase');
+  const [selectedFood, setSelectedFood] = useState<any>(null);
+  const [showFoodModal, setShowFoodModal] = useState(false);
 
   const categories = [
     { value: 'all', label: 'Todas as Categorias' },
@@ -89,6 +92,11 @@ const NutritionTablePage: React.FC = () => {
     }
 
     setFilteredFoods(filtered);
+  };
+
+  const handleFoodClick = (food: any) => {
+    setSelectedFood(food);
+    setShowFoodModal(true);
   };
 
   const getGlycemicIndexColor = (gi: number) => {
@@ -282,7 +290,7 @@ const NutritionTablePage: React.FC = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 * index }}
               >
-                <Card hover className="h-full">
+                <Card hover className="h-full cursor-pointer" onClick={() => handleFoodClick(food)}>
                   <div className="flex items-center justify-between mb-3">
                     <span className="px-2 py-1 bg-primary-100 text-primary-700 text-xs rounded-full">
                       {getCategoryText(food.category)}
@@ -406,6 +414,133 @@ const NutritionTablePage: React.FC = () => {
           </motion.div>
         )}
       </div>
+
+      {/* Food Details Modal */}
+      <Modal
+        isOpen={showFoodModal}
+        onClose={() => setShowFoodModal(false)}
+        title={selectedFood?.food_name}
+        size="lg"
+      >
+        {selectedFood && (
+          <div className="space-y-6">
+            {/* Food Meta */}
+            <div className="flex items-center justify-between">
+              <span className="px-3 py-1 bg-primary-100 text-primary-700 text-sm rounded-full">
+                {getCategoryText(selectedFood.category)}
+              </span>
+              <span className={`px-3 py-1 text-sm rounded-full ${getGlycemicIndexColor(selectedFood.glycemic_index)}`}>
+                IG: {selectedFood.glycemic_index} ({getGlycemicIndexText(selectedFood.glycemic_index)})
+              </span>
+            </div>
+
+            {/* Serving Size */}
+            <div>
+              <h3 className="text-lg font-semibold text-dark-800 mb-2">Informações Gerais</h3>
+              <p className="text-neutral-700">
+                <strong>Porção de referência:</strong> {selectedFood.serving_size}
+              </p>
+              <p className="text-neutral-700">
+                <strong>Carga Glicêmica:</strong> {selectedFood.glycemic_load}
+              </p>
+            </div>
+
+            {/* Macronutrients */}
+            <div>
+              <h3 className="text-lg font-semibold text-dark-800 mb-3">Macronutrientes (por 100g)</h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="text-center p-3 border rounded-lg">
+                  <p className="text-2xl font-bold text-primary-600">{selectedFood.calories_per_100g}</p>
+                  <p className="text-sm text-neutral-600">Calorias</p>
+                </div>
+                <div className="text-center p-3 border rounded-lg">
+                  <p className="text-2xl font-bold text-blue-600">{selectedFood.carbs_per_100g}g</p>
+                  <p className="text-sm text-neutral-600">Carboidratos</p>
+                </div>
+                <div className="text-center p-3 border rounded-lg">
+                  <p className="text-2xl font-bold text-green-600">{selectedFood.protein_per_100g}g</p>
+                  <p className="text-sm text-neutral-600">Proteína</p>
+                </div>
+                <div className="text-center p-3 border rounded-lg">
+                  <p className="text-2xl font-bold text-yellow-600">{selectedFood.fat_per_100g}g</p>
+                  <p className="text-sm text-neutral-600">Gordura</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Other Nutrients */}
+            <div>
+              <h3 className="text-lg font-semibold text-dark-800 mb-3">Outros Nutrientes (por 100g)</h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <div className="text-center p-3 bg-neutral-50 rounded-lg">
+                  <p className="text-lg font-bold text-neutral-800">{selectedFood.fiber_per_100g}g</p>
+                  <p className="text-sm text-neutral-600">Fibra</p>
+                </div>
+                <div className="text-center p-3 bg-neutral-50 rounded-lg">
+                  <p className="text-lg font-bold text-neutral-800">{selectedFood.sugar_per_100g}g</p>
+                  <p className="text-sm text-neutral-600">Açúcar</p>
+                </div>
+                <div className="text-center p-3 bg-neutral-50 rounded-lg">
+                  <p className="text-lg font-bold text-neutral-800">{selectedFood.sodium_per_100g}mg</p>
+                  <p className="text-sm text-neutral-600">Sódio</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Vitamins and Minerals */}
+            {(selectedFood.vitamins || selectedFood.minerals) && (
+              <div>
+                <h3 className="text-lg font-semibold text-dark-800 mb-3">Vitaminas e Minerais</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {selectedFood.vitamins && Object.keys(selectedFood.vitamins).length > 0 && (
+                    <div>
+                      <h4 className="font-medium text-dark-700 mb-2">Vitaminas</h4>
+                      <div className="space-y-1 text-sm">
+                        {Object.entries(selectedFood.vitamins).map(([vitamin, value]) => (
+                          <div key={vitamin} className="flex justify-between">
+                            <span className="text-neutral-600">{vitamin}:</span>
+                            <span className="font-medium">{value}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {selectedFood.minerals && Object.keys(selectedFood.minerals).length > 0 && (
+                    <div>
+                      <h4 className="font-medium text-dark-700 mb-2">Minerais</h4>
+                      <div className="space-y-1 text-sm">
+                        {Object.entries(selectedFood.minerals).map(([mineral, value]) => (
+                          <div key={mineral} className="flex justify-between">
+                            <span className="text-neutral-600">{mineral}:</span>
+                            <span className="font-medium">{value}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Glycemic Index Info */}
+            <div className="bg-neutral-50 p-4 rounded-lg">
+              <h4 className="font-semibold text-dark-800 mb-2">Sobre o Índice Glicêmico</h4>
+              <p className="text-sm text-neutral-700">
+                {selectedFood.glycemic_index <= 55 && 
+                  "Este alimento tem índice glicêmico baixo, sendo uma boa opção para diabéticos pois causa menor elevação da glicemia."
+                }
+                {selectedFood.glycemic_index > 55 && selectedFood.glycemic_index <= 70 && 
+                  "Este alimento tem índice glicêmico médio. Pode ser consumido com moderação e preferencialmente acompanhado de fibras ou proteínas."
+                }
+                {selectedFood.glycemic_index > 70 && 
+                  "Este alimento tem índice glicêmico alto. Diabéticos devem consumir com cautela e em pequenas quantidades."
+                }
+              </p>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 };

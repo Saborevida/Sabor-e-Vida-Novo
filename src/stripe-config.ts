@@ -16,7 +16,7 @@ export const stripeProducts: StripeProduct[] = [
     name: 'Sabor & Vida Premium Mensal',
     description: 'Acesso completo a todas as receitas, planos personalizados e recursos exclusivos.',
     mode: 'subscription',
-    price: 'R$ 19,90',
+    price: 'R$ 9,90',
     currency: 'BRL',
     interval: 'month'
   },
@@ -26,7 +26,7 @@ export const stripeProducts: StripeProduct[] = [
     name: 'Sabor & Vida Premium Anual',
     description: 'Acesso completo por um ano com desconto.',
     mode: 'subscription',
-    price: 'R$ 159,00',
+    price: 'R$ 99,90',
     currency: 'BRL',
     interval: 'year'
   }

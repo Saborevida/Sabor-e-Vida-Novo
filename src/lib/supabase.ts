@@ -470,6 +470,7 @@ export const getEducationalContent = async (filters?: any) => {
       image: item.image_url || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
       tags: item.tags || [],
       author: item.author || 'Equipe Sabor & Vida',
+      external_url: item.external_url || null,
       created_at: item.created_at,
       updated_at: item.updated_at
     }));
@@ -556,6 +557,37 @@ export const getUserSubscription = async () => {
   } catch (err) {
     console.error('❌ Timeout ao buscar assinatura:', err);
     return null;
+  }
+};
+
+// NOVA FUNÇÃO: Criar lista de compras
+export const createShoppingList = async (userId: string, listData: any) => {
+  console.log('🛒 CRIANDO LISTA DE COMPRAS COM TIMEOUT');
+  
+  try {
+    const { data, error } = await withTimeout(
+      supabase
+        .from('shopping_lists')
+        .insert({
+          user_id: userId,
+          ...listData
+        })
+        .select()
+        .single(),
+      8000
+    );
+    
+    if (error) {
+      console.error('❌ Erro ao criar lista de compras:', error);
+      return { data: null, error };
+    }
+    
+    console.log('✅ Lista de compras criada no Supabase');
+    return { data, error: null };
+    
+  } catch (err) {
+    console.error('❌ Timeout ao criar lista de compras:', err);
+    return { data: null, error: err };
   }
 };
 
@@ -829,37 +861,6 @@ export const getShoppingLists = async (userId: string) => {
   }
 };
 
-// Função para criar lista de compras
-export const createShoppingList = async (userId: string, listData: any) => {
-  console.log('🛒 CRIANDO LISTA DE COMPRAS');
-  
-  try {
-    const { data, error } = await withTimeout(
-      supabase
-        .from('shopping_lists')
-        .insert({
-          user_id: userId,
-          ...listData
-        })
-        .select()
-        .single(),
-      8000
-    );
-    
-    if (error) {
-      console.error('❌ Erro ao criar lista de compras:', error);
-      return { data: null, error };
-    }
-    
-    console.log('✅ Lista de compras criada');
-    return { data, error: null };
-    
-  } catch (err) {
-    console.error('❌ Timeout ao criar lista de compras:', err);
-    return { data: null, error: err };
-  }
-};
-
 // Dados de exemplo para fallback - MANTIDOS
 const getExampleRecipes = () => [
   {
@@ -1059,3 +1060,5 @@ console.log('💳 FUNÇÃO DE ASSINATURA ADICIONADA');
 console.log('📂 CATEGORIAS, GLOSSÁRIO E TABELA NUTRICIONAL DISPONÍVEIS');
 console.log('⚙️ PREFERÊNCIAS DE USUÁRIO E AVALIAÇÕES IMPLEMENTADAS');
 console.log('🛒 LISTAS DE COMPRAS FUNCIONAIS');
+console.log('🏷️ TAGS CLICÁVEIS IMPLEMENTADAS');
+console.log('🔗 LINKS FUNCIONAIS NO DASHBOARD');
