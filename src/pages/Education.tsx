@@ -96,20 +96,26 @@ const EducationPage: React.FC = () => {
   const handleArticleClick = async (article: any) => {
     // Incrementar visualizações se for do Supabase
     if (dataSource === 'supabase' && article.id) {
-      await incrementArticleViews(article.id);
-      // Atualizar o contador local
-      setArticles(prev => prev.map(a => 
-        a.id === article.id ? { ...a, views: (a.views || 0) + 1 } : a
-      ));
+      try {
+        await incrementArticleViews(article.id);
+        // Atualizar o contador local
+        setArticles(prev => prev.map(a => 
+          a.id === article.id ? { ...a, views: (a.views || 0) + 1 } : a
+        ));
+      } catch (error) {
+        console.error('Erro ao incrementar visualizações:', error);
+      }
     }
     
-    // Se tem URL externa, abrir em nova aba
-    if (article.external_url) {
+    // Verificar se tem URL externa
+    if (article.external_url && article.external_url.trim()) {
+      console.log('🔗 Abrindo link externo:', article.external_url);
       window.open(article.external_url, '_blank', 'noopener,noreferrer');
       return;
     }
     
     // Caso contrário, abrir modal interno
+    console.log('📖 Abrindo artigo no modal interno');
     setSelectedArticle(article);
     setShowArticleModal(true);
   };
@@ -134,7 +140,7 @@ const EducationPage: React.FC = () => {
     return categoryMap[category as keyof typeof categoryMap] || category;
   };
 
-  // Calcular estatísticas reais
+  // Calcular estatísticas reais dos dados carregados
   const calculateStats = () => {
     const totalViews = articles.reduce((total, article) => total + (article.views || 0), 0);
     const avgRating = articles.length > 0 
@@ -142,8 +148,10 @@ const EducationPage: React.FC = () => {
       : '0.0';
     
     return {
+      totalArticles: articles.length,
       totalViews,
-      avgRating: parseFloat(avgRating)
+      avgRating: parseFloat(avgRating),
+      totalCategories: new Set(articles.map(a => a.category)).size
     };
   };
 
@@ -187,7 +195,7 @@ const EducationPage: React.FC = () => {
             <p>
               <strong>
                 {dataSource === 'supabase' ? '✅ Conectado ao Supabase' : '📝 Conteúdo de Exemplo'}:
-              </strong> {articles.length} artigos disponíveis
+              </strong> {stats.totalArticles} artigos disponíveis
             </p>
           </div>
         </motion.div>
@@ -204,7 +212,7 @@ const EducationPage: React.FC = () => {
               <BookOpen className="w-6 h-6 text-primary-600" />
             </div>
             <h3 className="font-semibold text-dark-800">Artigos</h3>
-            <p className="text-2xl font-bold text-primary-600">{articles.length}</p>
+            <p className="text-2xl font-bold text-primary-600">{stats.totalArticles}</p>
           </Card>
 
           <Card className="text-center">
@@ -228,7 +236,7 @@ const EducationPage: React.FC = () => {
               <TrendingUp className="w-6 h-6 text-yellow-600" />
             </div>
             <h3 className="font-semibold text-dark-800">Categorias</h3>
-            <p className="text-2xl font-bold text-yellow-600">{categories.length - 1}</p>
+            <p className="text-2xl font-bold text-yellow-600">{stats.totalCategories}</p>
           </Card>
         </motion.div>
 
@@ -358,7 +366,7 @@ const EducationPage: React.FC = () => {
                   </div>
 
                   <Button fullWidth variant="outline" size="sm">
-                    {article.external_url ? (
+                    {article.external_url && article.external_url.trim() ? (
                       <div className="flex items-center justify-center">
                         <span>Ler Artigo</span>
                         <ExternalLink size={14} className="ml-1" />

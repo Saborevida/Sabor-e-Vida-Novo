@@ -243,17 +243,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     console.log('🔐 Iniciando processo de cadastro');
     
     try {
+      // Preparar metadados do usuário de forma mais robusta
+      const userMetadata = {
+        name: userData.name || email.split('@')[0] || 'Usuário',
+        diabetesType: userData.diabetesType || 'type2'
+      };
+      
+      console.log('📝 Metadados do usuário:', userMetadata);
+      
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          data: userData,
+          data: userMetadata,
           emailRedirectTo: `${window.location.origin}/dashboard`
         },
       });
 
       if (data.user && !error) {
         console.log('✅ Cadastro realizado com sucesso');
+        
+        // Aguardar um pouco para o trigger processar
+        await new Promise(resolve => setTimeout(resolve, 1000));
       }
 
       return { data, error };

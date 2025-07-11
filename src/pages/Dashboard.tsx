@@ -8,7 +8,8 @@ import {
   TrendingUp,
   Clock,
   Users,
-  ChefHat
+  ChefHat,
+  ShoppingCart
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { getRecipes, getFavorites, getMealPlans } from '../lib/supabase';
@@ -170,13 +171,23 @@ const Dashboard: React.FC = () => {
     let score = 50; // Base score
     
     // Adicionar pontos por favoritos (máximo 20 pontos)
-    score += Math.min(favoriteRecipes.length * 2, 20);
+    score += Math.min(favoriteRecipes.length * 3, 20);
     
     // Adicionar pontos por planos criados (máximo 15 pontos)
-    score += Math.min(mealPlansCount * 5, 15);
+    score += Math.min(mealPlansCount * 8, 15);
     
     // Adicionar pontos por receitas disponíveis (máximo 15 pontos)
     score += Math.min(recentRecipes.length * 2, 15);
+    
+    // Bônus por perfil completo
+    if (userProfile?.name && userProfile?.diabetesType) {
+      score += 10;
+    }
+    
+    // Bônus por objetivos de saúde definidos
+    if (userProfile?.healthGoals && userProfile.healthGoals.length > 0) {
+      score += 5;
+    }
     
     return Math.min(score, 100);
   };
@@ -234,14 +245,36 @@ const Dashboard: React.FC = () => {
       color: 'bg-green-500',
       href: '/education',
     },
+    {
+      title: 'Listas de Compras',
+      description: 'Gerencie suas listas',
+      icon: ShoppingCart,
+      color: 'bg-purple-500',
+      href: '/shopping-lists',
+    },
   ];
 
   const handleQuickAction = (href: string) => {
-    window.location.href = href;
+    console.log('🔗 Navegando para:', href);
+    try {
+      window.location.href = href;
+    } catch (error) {
+      console.error('❌ Erro na navegação:', error);
+      // Fallback usando history API
+      window.history.pushState({}, '', href);
+      window.location.reload();
+    }
   };
 
   const handleRecipeClick = (href: string) => {
-    window.location.href = href;
+    console.log('🍽️ Navegando para receitas:', href);
+    try {
+      window.location.href = href;
+    } catch (error) {
+      console.error('❌ Erro na navegação:', error);
+      window.history.pushState({}, '', href);
+      window.location.reload();
+    }
   };
 
   if (loading) {
@@ -287,6 +320,7 @@ const Dashboard: React.FC = () => {
             <p><strong>🍽️ Receitas:</strong> {recentRecipes.length}</p>
             <p><strong>❤️ Favoritos:</strong> {favoriteRecipes.length}</p>
             <p><strong>📅 Planos:</strong> {mealPlansCount}</p>
+            <p><strong>⭐ Pontuação:</strong> {calculateHealthScore()}/100</p>
           </div>
         </motion.div>
 
@@ -334,7 +368,7 @@ const Dashboard: React.FC = () => {
           <h2 className="text-xl font-heading font-semibold text-dark-800 mb-4">
             Ações Rápidas
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {quickActions.map((action, index) => (
               <Card key={index} hover className="text-center cursor-pointer" onClick={() => handleQuickAction(action.href)}>
                 <div className={`w-12 h-12 ${action.color} rounded-lg flex items-center justify-center mx-auto mb-4`}>

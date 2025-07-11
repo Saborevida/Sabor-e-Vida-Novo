@@ -15,6 +15,7 @@ import PricingPage from './pages/Pricing';
 import SuccessPage from './pages/Success';
 import GlossaryPage from './pages/Glossary';
 import NutritionTablePage from './pages/NutritionTable';
+import ShoppingListsPage from './pages/ShoppingLists';
 
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -80,6 +81,7 @@ const RegisterPage: React.FC = () => {
     const diabetesType = formData.get('diabetesType') as string;
 
     console.log('📝 Registration attempt:', email);
+    console.log('📝 User data:', { name, diabetesType });
 
     try {
       const { error } = await signUp(email, password, {
@@ -89,7 +91,15 @@ const RegisterPage: React.FC = () => {
 
       if (error) {
         console.error('❌ Registration error:', error);
-        setError('Erro ao criar conta. Tente novamente.');
+        
+        // Melhor tratamento de erros específicos
+        if (error.message?.includes('Database error')) {
+          setError('Erro no servidor. Tente novamente em alguns instantes.');
+        } else if (error.message?.includes('already registered')) {
+          setError('Este email já está cadastrado. Tente fazer login.');
+        } else {
+          setError('Erro ao criar conta. Verifique os dados e tente novamente.');
+        }
       } else {
         console.log('✅ Registration successful');
         setSuccess(true);
@@ -225,7 +235,7 @@ const RegisterPage: React.FC = () => {
 };
 
 function App() {
-  console.log('🎯 Rendering App component - VERSÃO COMPLETA COM NOVAS PÁGINAS');
+  console.log('🎯 Rendering App component - VERSÃO COMPLETA COM LISTAS DE COMPRAS');
   console.log('🌍 Current URL:', window.location.href);
   console.log('🔧 Mode:', import.meta.env.MODE);
   
@@ -302,6 +312,14 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <ProfilePage />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/shopping-lists" 
+                element={
+                  <ProtectedRoute>
+                    <ShoppingListsPage />
                   </ProtectedRoute>
                 } 
               />

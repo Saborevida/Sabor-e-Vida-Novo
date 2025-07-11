@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Heart, Menu, User, LogOut, Settings, BookOpen, Apple } from 'lucide-react';
+import { Heart, Menu, User, LogOut, Settings, BookOpen, Apple, ShoppingCart } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import Button from '../ui/Button';
 
@@ -16,6 +16,7 @@ const Header: React.FC = () => {
     { name: 'Planos', href: '/meal-plans' },
     { name: 'Educação', href: '/education' },
     { name: 'Favoritos', href: '/favorites' },
+    { name: 'Listas de Compras', href: '/shopping-lists' },
   ];
 
   const publicNavigation = [
@@ -67,13 +68,14 @@ const Header: React.FC = () => {
               <Link
                 key={item.name}
                 to={item.href}
-                className={`px-3 py-2 text-sm font-medium transition-colors duration-200 ${
+                className={`px-3 py-2 text-sm font-medium transition-colors duration-200 flex items-center space-x-1 ${
                   isActive(item.href)
                     ? 'text-primary-600 border-b-2 border-primary-600'
                     : 'text-neutral-600 hover:text-primary-600'
                 }`}
               >
-                {item.name}
+                {item.name === 'Listas de Compras' && <ShoppingCart size={16} />}
+                <span>{item.name}</span>
               </Link>
             ))}
           </nav>
@@ -107,6 +109,14 @@ const Header: React.FC = () => {
                     >
                       <Settings className="w-4 h-4 mr-3" />
                       Perfil
+                    </Link>
+                    <Link
+                      to="/shopping-lists"
+                      className="flex items-center px-4 py-2 text-sm text-dark-700 hover:bg-neutral-50"
+                      onClick={() => setIsUserMenuOpen(false)}
+                    >
+                      <ShoppingCart className="w-4 h-4 mr-3" />
+                      Listas de Compras
                     </Link>
                     <button
                       onClick={handleSignOut}
@@ -173,14 +183,15 @@ const Header: React.FC = () => {
                 <Link
                   key={item.name}
                   to={item.href}
-                  className={`block px-3 py-2 text-base font-medium rounded-lg ${
+                  className={`flex items-center space-x-2 px-3 py-2 text-base font-medium rounded-lg ${
                     isActive(item.href)
                       ? 'bg-primary-50 text-primary-700'
                       : 'text-neutral-600 hover:bg-neutral-50 hover:text-primary-600'
                   }`}
                   onClick={() => setIsMenuOpen(false)}
                 >
-                  {item.name}
+                  {item.name === 'Listas de Compras' && <ShoppingCart size={20} />}
+                  <span>{item.name}</span>
                 </Link>
               ))}
             </nav>

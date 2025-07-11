@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Calendar, Plus, Clock, Users, Target, ChefHat, ShoppingCart } from 'lucide-react';
+import { Calendar, Plus, Clock, Users, Target, ChefHat, ShoppingCart, Search, Filter } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { getMealPlans, createMealPlan, getRecipes, createShoppingList } from '../lib/supabase';
 import Card from '../components/ui/Card';
@@ -17,12 +17,34 @@ const MealPlansPage: React.FC = () => {
   const [dataSource, setDataSource] = useState<'supabase' | 'example'>('supabase');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showPlanModal, setShowPlanModal] = useState(false);
+  const [showRecipeSelector, setShowRecipeSelector] = useState(false);
   const [selectedPlanDetails, setSelectedPlanDetails] = useState<any>(null);
   const [creating, setCreating] = useState(false);
   const [generatingList, setGeneratingList] = useState(false);
+  const [currentPlanForEdit, setCurrentPlanForEdit] = useState<any>(null);
+  const [selectedDay, setSelectedDay] = useState<string>('');
+  const [selectedMeal, setSelectedMeal] = useState<string>('');
+  const [recipeSearchTerm, setRecipeSearchTerm] = useState('');
+
+  const daysOfWeek = [
+    { key: 'monday', label: 'Segunda-feira' },
+    { key: 'tuesday', label: 'Terça-feira' },
+    { key: 'wednesday', label: 'Quarta-feira' },
+    { key: 'thursday', label: 'Quinta-feira' },
+    { key: 'friday', label: 'Sexta-feira' },
+    { key: 'saturday', label: 'Sábado' },
+    { key: 'sunday', label: 'Domingo' }
+  ];
+
+  const mealTypes = [
+    { key: 'breakfast', label: 'Café da Manhã' },
+    { key: 'lunch', label: 'Almoço' },
+    { key: 'dinner', label: 'Jantar' },
+    { key: 'snack', label: 'Lanche' }
+  ];
 
   useEffect(() => {
-    console.log('📅 Carregando página de planos com timeout');
+    console.log('📅 Carregando página de planos com timeout reduzido');
     fetchMealPlans();
     fetchRecipes();
   }, [userProfile]);
@@ -33,14 +55,14 @@ const MealPlansPage: React.FC = () => {
       return;
     }
 
-    // Timeout para carregamento
+    // Timeout reduzido para 5 segundos
     const loadingTimeout = setTimeout(() => {
       if (loading) {
-        console.log('⏰ Timeout no carregamento de planos');
+        console.log('⏰ Timeout no carregamento de planos (5s)');
         setLoading(false);
         setDataSource('example');
       }
-    }, 10000); // 10 segundos máximo
+    }, 5000);
 
     try {
       console.log('📥 Buscando planos de refeição...');
@@ -51,7 +73,6 @@ const MealPlansPage: React.FC = () => {
       if (data && data.length > 0) {
         console.log('✅ Planos carregados:', data.length);
         
-        // Verificar se são dados reais ou de exemplo
         const isExample = data.some(plan => plan.id?.startsWith('plan-'));
         setDataSource(isExample ? 'example' : 'supabase');
         
@@ -100,18 +121,41 @@ const MealPlansPage: React.FC = () => {
         totalMeals: calculateTotalMeals(formData.get('startDate') as string, formData.get('endDate') as string),
         calories: '1500-1700 kcal/dia',
         difficulty: formData.get('difficulty') as string,
-        tags: ['Personalizado', 'Novo']
+        tags: ['Personalizado', 'Novo'],
+        weekly_menu: {
+          monday: { breakfast: '', lunch: '', dinner: '', snack: '' },
+          tuesday: { breakfast: '', lunch: '', dinner: '', snack: '' },
+          wednesday: { breakfast: '', lunch: '', dinner: '', snack: '' },
+          thursday: { breakfast: '', lunch: '', dinner: '', snack: '' },
+          friday: { breakfast: '', lunch: '', dinner: '', snack: '' },
+          saturday: { breakfast: '', lunch: '', dinner: '', snack: '' },
+          sunday: { breakfast: '', lunch: '', dinner: '', snack: '' }
+        }
       }
     };
 
     try {
       console.log('📅 Criando novo plano...');
+      
+      // Timeout reduzido para criação
+      const createTimeout = setTimeout(() => {
+        setCreating(false);
+        alert('Timeout na criação do plano. Tente novamente.');
+      }, 8000);
+
       const { data, error } = await createMealPlan(userProfile.id, planData);
+      
+      clearTimeout(createTimeout);
       
       if (data && !error) {
         console.log('✅ Plano criado com sucesso');
         setShowCreateModal(false);
-        fetchMealPlans(); // Recarregar lista
+        fetchMealPlans();
+        
+        // Abrir o plano para edição
+        setCurrentPlanForEdit(data);
+        setSelectedPlanDetails(data);
+        setShowPlanModal(true);
       } else {
         console.error('❌ Erro ao criar plano:', error);
         alert('Erro ao criar plano. Tente novamente.');
@@ -137,13 +181,48 @@ const MealPlansPage: React.FC = () => {
     const end = new Date(endDate);
     const diffTime = Math.abs(end.getTime() - start.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays * 3; // 3 refeições por dia
+    return diffDays * 3;
   };
 
   const handleViewPlan = (plan: any) => {
     setSelectedPlanDetails(plan);
+    setCurrentPlanForEdit(plan);
     setShowPlanModal(true);
   };
+
+  const handleAddRecipeToPlan = (day: string, meal: string) => {
+    setSelectedDay(day);
+    setSelectedMeal(meal);
+    setShowRecipeSelector(true);
+  };
+
+  const handleSelectRecipe = (recipe: any) => {
+    if (!currentPlanForEdit || !selectedDay || !selectedMeal) return;
+
+    const updatedPlan = { ...currentPlanForEdit };
+    if (!updatedPlan.meals.weekly_menu) {
+      updatedPlan.meals.weekly_menu = {};
+    }
+    if (!updatedPlan.meals.weekly_menu[selectedDay]) {
+      updatedPlan.meals.weekly_menu[selectedDay] = {};
+    }
+    updatedPlan.meals.weekly_menu[selectedDay][selectedMeal] = recipe.id;
+
+    setCurrentPlanForEdit(updatedPlan);
+    setSelectedPlanDetails(updatedPlan);
+    setShowRecipeSelector(false);
+    
+    console.log('✅ Receita adicionada ao plano:', recipe.name);
+  };
+
+  const getRecipeById = (recipeId: string) => {
+    return recipes.find(recipe => recipe.id === recipeId);
+  };
+
+  const filteredRecipes = recipes.filter(recipe =>
+    recipe.name.toLowerCase().includes(recipeSearchTerm.toLowerCase()) ||
+    recipe.tags.some((tag: string) => tag.toLowerCase().includes(recipeSearchTerm.toLowerCase()))
+  );
 
   const handleGenerateShoppingList = async (plan: any) => {
     if (!userProfile) return;
@@ -152,11 +231,9 @@ const MealPlansPage: React.FC = () => {
     try {
       console.log('🛒 Gerando lista de compras para o plano:', plan.name);
       
-      // Extrair ingredientes de todas as receitas do plano
       const ingredients: any[] = [];
       const weeklyMenu = plan.meals?.weekly_menu || {};
       
-      // Buscar receitas por ID e extrair ingredientes
       for (const day of Object.values(weeklyMenu)) {
         const dayMeals = day as any;
         for (const mealType of ['breakfast', 'lunch', 'dinner', 'snack']) {
@@ -173,7 +250,6 @@ const MealPlansPage: React.FC = () => {
         }
       }
 
-      // Consolidar ingredientes por nome
       const consolidatedIngredients = ingredients.reduce((acc, ingredient) => {
         const name = ingredient.name || 'Ingrediente';
         if (acc[name]) {
@@ -195,14 +271,17 @@ const MealPlansPage: React.FC = () => {
         meal_plan_id: plan.id,
         items: Object.values(consolidatedIngredients),
         total_estimated_cost: 0,
-        status: 'draft'
+        status: 'active'
       };
 
       const { data, error } = await createShoppingList(userProfile.id, shoppingListData);
       
       if (data && !error) {
         console.log('✅ Lista de compras criada com sucesso');
-        alert('Lista de compras gerada com sucesso!');
+        alert('Lista de compras gerada com sucesso! Acesse em "Listas de Compras" no menu.');
+        
+        // Redirecionar para a página de listas de compras
+        window.location.href = '/shopping-lists';
       } else {
         console.error('❌ Erro ao criar lista de compras:', error);
         alert('Erro ao gerar lista de compras. Tente novamente.');
@@ -215,11 +294,10 @@ const MealPlansPage: React.FC = () => {
     }
   };
 
-  // Calcular estatísticas reais
   const calculateStats = () => {
     const totalMeals = mealPlans.reduce((total, plan) => total + (plan.meals?.totalMeals || 0), 0);
     const avgTime = recipes.length > 0 ? Math.round(recipes.reduce((total, recipe) => total + (recipe.prep_time || 0), 0) / recipes.length) : 0;
-    const avgCalories = Math.round(1500 + (mealPlans.length * 50)); // Estimativa baseada nos planos
+    const avgCalories = Math.round(1500 + (mealPlans.length * 50));
     
     return {
       totalMeals,
@@ -281,7 +359,7 @@ const MealPlansPage: React.FC = () => {
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-neutral-600">Carregando planos de refeição...</p>
-          <p className="text-sm text-neutral-500 mt-2">Máximo 10 segundos</p>
+          <p className="text-sm text-neutral-500 mt-2">Máximo 5 segundos</p>
         </div>
       </div>
     );
@@ -449,7 +527,7 @@ const MealPlansPage: React.FC = () => {
                           size="sm"
                           onClick={() => handleViewPlan(plan)}
                         >
-                          Ver Detalhes
+                          Ver/Editar
                         </Button>
                         <Button
                           fullWidth
@@ -605,6 +683,13 @@ const MealPlansPage: React.FC = () => {
             </select>
           </div>
 
+          <div className="bg-blue-50 p-4 rounded-lg">
+            <h4 className="font-semibold text-blue-800 mb-2">💡 Próximo Passo</h4>
+            <p className="text-sm text-blue-700">
+              Após criar o plano, você poderá adicionar receitas específicas para cada dia da semana.
+            </p>
+          </div>
+
           <div className="flex space-x-4">
             <Button
               type="button"
@@ -626,15 +711,16 @@ const MealPlansPage: React.FC = () => {
         </form>
       </Modal>
 
-      {/* Plan Details Modal */}
+      {/* Plan Details/Edit Modal */}
       <Modal
         isOpen={showPlanModal}
         onClose={() => setShowPlanModal(false)}
         title={selectedPlanDetails?.name}
-        size="lg"
+        size="xl"
       >
         {selectedPlanDetails && (
           <div className="space-y-6">
+            {/* Plan Info */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <h4 className="font-semibold text-dark-800 mb-2">Informações Gerais</h4>
@@ -654,25 +740,43 @@ const MealPlansPage: React.FC = () => {
               </div>
             </div>
 
+            {/* Weekly Menu Editor */}
             <div>
-              <h4 className="font-semibold text-dark-800 mb-2">Descrição</h4>
-              <p className="text-neutral-600">{selectedPlanDetails.meals?.description}</p>
-            </div>
-
-            <div>
-              <h4 className="font-semibold text-dark-800 mb-2">Tags</h4>
-              <div className="flex flex-wrap gap-2">
-                {(selectedPlanDetails.meals?.tags || []).map((tag: string, index: number) => (
-                  <span
-                    key={index}
-                    className="px-3 py-1 bg-primary-100 text-primary-700 text-sm rounded-full"
-                  >
-                    {tag}
-                  </span>
+              <h4 className="font-semibold text-dark-800 mb-3">Cardápio Semanal</h4>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {daysOfWeek.map((day) => (
+                  <Card key={day.key} className="p-4">
+                    <h5 className="font-medium text-dark-800 mb-3">{day.label}</h5>
+                    <div className="space-y-2">
+                      {mealTypes.map((meal) => {
+                        const recipeId = selectedPlanDetails.meals?.weekly_menu?.[day.key]?.[meal.key];
+                        const recipe = recipeId ? getRecipeById(recipeId) : null;
+                        
+                        return (
+                          <div key={meal.key} className="border rounded-lg p-2">
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm font-medium text-neutral-700">{meal.label}</span>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleAddRecipeToPlan(day.key, meal.key)}
+                              >
+                                {recipe ? 'Trocar' : 'Adicionar'}
+                              </Button>
+                            </div>
+                            {recipe && (
+                              <p className="text-sm text-neutral-600 mt-1">{recipe.name}</p>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </Card>
                 ))}
               </div>
             </div>
 
+            {/* Actions */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Button
                 fullWidth
@@ -696,6 +800,56 @@ const MealPlansPage: React.FC = () => {
             </div>
           </div>
         )}
+      </Modal>
+
+      {/* Recipe Selector Modal */}
+      <Modal
+        isOpen={showRecipeSelector}
+        onClose={() => setShowRecipeSelector(false)}
+        title={`Selecionar Receita - ${selectedDay && selectedMeal ? `${daysOfWeek.find(d => d.key === selectedDay)?.label} - ${mealTypes.find(m => m.key === selectedMeal)?.label}` : ''}`}
+        size="lg"
+      >
+        <div className="space-y-4">
+          {/* Search */}
+          <Input
+            label="Buscar receitas"
+            type="text"
+            value={recipeSearchTerm}
+            onChange={(e) => setRecipeSearchTerm(e.target.value)}
+            icon={Search}
+            placeholder="Nome da receita ou ingrediente..."
+          />
+
+          {/* Recipes Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-96 overflow-y-auto">
+            {filteredRecipes.map((recipe) => (
+              <Card key={recipe.id} hover className="cursor-pointer" onClick={() => handleSelectRecipe(recipe)}>
+                <div className="flex items-center space-x-3">
+                  <img
+                    src={recipe.image_url || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400'}
+                    alt={recipe.name}
+                    className="w-16 h-16 rounded-lg object-cover"
+                  />
+                  <div className="flex-1">
+                    <h4 className="font-medium text-dark-800">{recipe.name}</h4>
+                    <div className="flex items-center space-x-2 text-sm text-neutral-600">
+                      <Clock size={14} />
+                      <span>{recipe.prep_time} min</span>
+                      <span>•</span>
+                      <span>IG: {recipe.nutrition_info?.glycemicIndex || 0}</span>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+
+          {filteredRecipes.length === 0 && (
+            <div className="text-center py-8">
+              <p className="text-neutral-600">Nenhuma receita encontrada</p>
+            </div>
+          )}
+        </div>
       </Modal>
     </div>
   );
