@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Heart, Search, Filter, Clock, Users, Star } from 'lucide-react';
+import { Heart, Search, Filter, Clock, Users, Star, Trash2, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { getFavorites } from '../lib/supabase';
+import { getFavorites, removeFromFavorites } from '../lib/supabase';
 import { Recipe } from '../types';
 import RecipeCard from '../components/recipes/RecipeCard';
 import Card from '../components/ui/Card';
@@ -16,6 +16,7 @@ const FavoritesPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [removingFavorite, setRemovingFavorite] = useState<string | null>(null);
 
   const categories = [
     { value: 'all', label: 'Todas as Categorias' },
@@ -112,6 +113,31 @@ const FavoritesPage: React.FC = () => {
 
   const handleFavoriteChange = () => {
     fetchFavorites();
+  };
+
+  const handleRemoveFavorite = async (recipeId: string) => {
+    if (!user) return;
+    
+    setRemovingFavorite(recipeId);
+    try {
+      console.log('💔 Removendo favorito:', recipeId);
+      const { error } = await removeFromFavorites(user.id, recipeId);
+      
+      if (error) {
+        console.error('❌ Erro ao remover favorito:', error);
+        alert('Erro ao remover favorito. Tente novamente.');
+      } else {
+        console.log('✅ Favorito removido com sucesso');
+        // Atualizar a lista local imediatamente
+        setFavorites(prev => prev.filter(recipe => recipe.id !== recipeId));
+        setFilteredFavorites(prev => prev.filter(recipe => recipe.id !== recipeId));
+      }
+    } catch (error) {
+      console.error('❌ Erro inesperado ao remover favorito:', error);
+      alert('Erro inesperado. Tente novamente.');
+    } finally {
+      setRemovingFavorite(null);
+    }
   };
 
   const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -298,7 +324,22 @@ const FavoritesPage: React.FC = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 * index }}
+                className="relative group"
               >
+                {/* Botão de Remover */}
+                <button
+                  onClick={() => handleRemoveFavorite(recipe.id)}
+                  disabled={removingFavorite === recipe.id}
+                  className="absolute top-2 right-2 z-10 p-2 bg-red-500 text-white rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-red-600 disabled:opacity-50"
+                  title="Remover dos favoritos"
+                >
+                  {removingFavorite === recipe.id ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <X size={16} />
+                  )}
+                </button>
+                
                 <RecipeCard 
                   recipe={recipe} 
                   isFavorite={true}

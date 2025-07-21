@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Calendar, Plus, Clock, Users, Target, ChefHat, ShoppingCart, Search, Filter } from 'lucide-react';
+import { Calendar, Plus, Clock, Users, Target, ChefHat, ShoppingCart, Search, Filter, Trash2, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { getMealPlans, createMealPlan, getRecipes, createShoppingList } from '../lib/supabase';
+import { getMealPlans, createMealPlan, getRecipes, createShoppingList, supabase } from '../lib/supabase';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Modal from '../components/ui/Modal';
@@ -25,6 +25,7 @@ const MealPlansPage: React.FC = () => {
   const [selectedDay, setSelectedDay] = useState<string>('');
   const [selectedMeal, setSelectedMeal] = useState<string>('');
   const [recipeSearchTerm, setRecipeSearchTerm] = useState('');
+  const [deletingPlan, setDeletingPlan] = useState<string | null>(null);
 
   const daysOfWeek = [
     { key: 'monday', label: 'Segunda-feira' },
@@ -294,6 +295,45 @@ const MealPlansPage: React.FC = () => {
     }
   };
 
+  const handleDeletePlan = async (planId: string) => {
+    if (!userProfile) return;
+    
+    const confirmDelete = window.confirm('Tem certeza que deseja excluir este plano de refeição?');
+    if (!confirmDelete) return;
+    
+    setDeletingPlan(planId);
+    try {
+      console.log('🗑️ Excluindo plano:', planId);
+      
+      const { error } = await supabase
+        .from('meal_plans')
+        .delete()
+        .eq('id', planId)
+        .eq('user_id', userProfile.id);
+      
+      if (error) {
+        console.error('❌ Erro ao excluir plano:', error);
+        alert('Erro ao excluir plano. Tente novamente.');
+      } else {
+        console.log('✅ Plano excluído com sucesso');
+        // Atualizar a lista local
+        setMealPlans(prev => prev.filter(plan => plan.id !== planId));
+        
+        // Se era o plano selecionado, desselecionar
+        if (selectedPlan === planId) {
+          setSelectedPlan(null);
+        }
+        
+        alert('Plano excluído com sucesso!');
+      }
+    } catch (error) {
+      console.error('❌ Erro inesperado ao excluir plano:', error);
+      alert('Erro inesperado. Tente novamente.');
+    } finally {
+      setDeletingPlan(null);
+    }
+  };
+
   const calculateStats = () => {
     const totalMeals = mealPlans.reduce((total, plan) => total + (plan.meals?.totalMeals || 0), 0);
     const avgTime = recipes.length > 0 ? Math.round(recipes.reduce((total, recipe) => total + (recipe.prep_time || 0), 0) / recipes.length) : 0;
@@ -466,7 +506,22 @@ const MealPlansPage: React.FC = () => {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.1 * index }}
+                  className="relative group"
                 >
+                  {/* Botão de Excluir */}
+                  <button
+                    onClick={() => handleDeletePlan(plan.id)}
+                    disabled={deletingPlan === plan.id}
+                    className="absolute top-2 right-2 z-10 p-2 bg-red-500 text-white rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-red-600 disabled:opacity-50"
+                    title="Excluir plano"
+                  >
+                    {deletingPlan === plan.id ? (
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <Trash2 size={16} />
+                    )}
+                  </button>
+                  
                   <Card hover className="h-full">
                     <img
                       src="https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400"

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ShoppingCart, Plus, Check, X, Edit, Trash2, Calendar, DollarSign } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { getShoppingLists, createShoppingList } from '../lib/supabase';
+import { getShoppingLists, createShoppingList, supabase } from '../lib/supabase';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Modal from '../components/ui/Modal';
@@ -17,6 +17,7 @@ const ShoppingListsPage: React.FC = () => {
   const [showListModal, setShowListModal] = useState(false);
   const [creating, setCreating] = useState(false);
   const [editingList, setEditingList] = useState(false);
+  const [deletingList, setDeletingList] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -619,6 +620,15 @@ const ShoppingListsPage: React.FC = () => {
                   >
                     <Check size={16} className="mr-2" />
                     {selectedList.status === 'completed' ? 'Lista Concluída' : 'Marcar como Concluída'}
+                  </Button>
+                  <Button 
+                    variant="danger" 
+                    fullWidth
+                    onClick={() => handleDeleteList(selectedList.id)}
+                    disabled={deletingList === selectedList.id}
+                  >
+                    <Trash2 size={16} className="mr-2" />
+                    {deletingList === selectedList.id ? 'Excluindo...' : 'Excluir Lista'}
                   </Button>
                 </>
               )}
